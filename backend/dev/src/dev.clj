@@ -28,3 +28,12 @@
   (load "local"))
 
 (integrant.repl/set-prep! #(duct/prep-config (read-config) profiles))
+
+(defn unilog-db []
+  (:spec (get integrant.repl.state/system [:duct.database.sql/hikaricp :authz/unilog-db])))
+
+(comment
+
+  (clojure.java.jdbc/query (unilog-db) ["select 1"] {:transaction? false})
+
+  )

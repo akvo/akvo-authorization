@@ -1,11 +1,23 @@
 {:duct.profile/base
  {:duct.core/project-ns akvo-authorization
 
-  :duct.router/cascading
-  [#ig/ref [:akvo-authorization.handler/healthz]]
+  :duct.router/cascading [#ig/ref [:akvo-authorization.handler/monitoring]]
 
-  :akvo-authorization.handler/healthz
-  {:db #ig/ref :duct.database/sql}}
+  :duct.migrator/ragtime {:database #ig/ref :authz/authz-db}
+
+  :akvo-authorization.handler/monitoring {:db #ig/ref :authz/authz-db}
+
+  [:duct.database.sql/hikaricp :authz/authz-db] {:idle-timeout 300000
+                                                 :minimum-idle 2
+                                                 :maximum-pool-size 5
+                                                 :jdbc-url #duct/env "AUTHZ_DATABASE_URL"}
+
+  [:duct.database.sql/hikaricp :authz/unilog-db] {:idle-timeout 300000
+                                                  :minimum-idle 2
+                                                  :maximum-pool-size 2
+                                                  :jdbc-url #duct/env "UNILOG_DATABASE_URL"}
+
+  }
 
  :duct.profile/dev #duct/include "dev"
  :duct.profile/local #duct/include "local"

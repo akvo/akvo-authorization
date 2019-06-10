@@ -19,6 +19,8 @@ services:
       - pg-data:/pg-certs:ro
     environment:
       - PGSSLROOTCERT=/pg-certs/server.crt
+      - UNILOG_DATABASE_URL
+      - AUTHZ_DATABASE_URL=jdbc:postgresql://postgres/authzdb?user=authzuser&password=authzpasswd&ssl=true
     ports:
       - "47480:47480"
       - "3000:3000"
