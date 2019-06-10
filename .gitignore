@@ -12,3 +12,5 @@ backend/pom.xml.asc
 
 .idea
 *.iml
+backend/.nrepl-port
+backend/.lein-repl-history

@@ -16,7 +16,12 @@
   :profiles
   {:dev  [:project/dev :profiles/dev]
    :repl {:prep-tasks   ^:replace ["javac" "compile"]
-          :repl-options {:init-ns user}}
+          :repl-options {:init-ns dev
+                         :init (do
+                                 (println "Starting BackEnd ...")
+                                 (go))
+                         :host "0.0.0.0"
+                         :port 47480}}
    :uberjar {:aot :all}
    :profiles/dev {}
    :project/dev  {:source-paths   ["dev/src"]

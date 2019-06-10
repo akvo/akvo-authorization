@@ -1,0 +1,26 @@
+version: "3"
+services:
+  postgres:
+    build: postgres
+    environment:
+    - POSTGRES_PASSWORD=akvo
+    ports:
+    - "5432:5432"
+    volumes:
+    - pg-data:/var/lib/postgresql/data
+  authz:
+    build:
+      context: backend
+      dockerfile: dev/Dockerfile-dev
+    volumes:
+      - ./backend:/app
+      - ~/.m2:/root/.m2
+      - ~/.lein:/root/.lein
+      - pg-data:/pg-certs:ro
+    environment:
+      - PGSSLROOTCERT=/pg-certs/server.crt
+    ports:
+      - "47480:47480"
+      - "3000:3000"
+volumes:
+  pg-data:
