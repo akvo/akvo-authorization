@@ -1,0 +1,14 @@
+backend/target
+backend/logs
+backend/classes
+backend/checkouts
+backend/pom.xml
+backend/pom.xml.asc
+*.jar
+*.class
+/.lein-*
+/.nrepl-port
+/.dir-locals.el
+
+.idea
+*.iml
