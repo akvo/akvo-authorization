@@ -5,7 +5,7 @@
             [reifyhealth.specmonstah.core :as sm]
             [reifyhealth.specmonstah.spec-gen :as sg]
             [akvo-authorization.unilog.spec :as unilog-spec]
-            [testit.core :as it :refer [=in=> fact]]
+            [testit.core :as it :refer [=in=> fact =>]]
             [clojure.string :as str]))
 
 (def schema
@@ -41,43 +41,41 @@
 (defn perms* [parent [node-name & [maybe-attrs & more :as all]]]
   (let [[node-name type] (str/split (name node-name) #"#")
         node-name (keyword node-name)
+        next-parent (if parent node-name ::sm/omit)
         user-auth (if (map? maybe-attrs)
                     (let [user-id (keyword (str "user" (get maybe-attrs :auth)))]
                       {:user [[user-id {:spec-gen {:emailAddress (str (name user-id) "@akvo.org")}}]]
                        :user-authorization [[1 {:refs {:userId user-id
-                                                       :securedObjectId node-name}}]]}))
+                                                       :securedObjectId next-parent}}]]}))
         children (map
-                   (partial perms* node-name)
+                   (partial perms* next-parent)
                    (if (map? maybe-attrs) more all))]
-    (apply merge-with (fn [left right] (vec (set (concat left right))))
-      {:node [[node-name {:spec-gen {:name (name node-name)
-                                     :survey-group-type (if type (str/upper-case type) "FOLDER")
-                                     :id 0}
-                          :refs {:parentId parent}}]]}
+    (apply merge-with (fn [left right] (distinct (concat left right)))
+      (when parent
+        {:node [[node-name {:spec-gen {:name (name node-name)
+                                       :survey-group-type (if type (str/upper-case type) "FOLDER")}
+                            :refs {:parentId parent}}]]})
       user-auth
       children)))
 
 (defn perms [tree]
-  (assoc (perms* ::sm/omit tree)
+  (assoc (perms* nil tree)
     :role [[1 {:spec-gen {:permissions #{"PROJECT_FOLDER_READ"}}}]]))
-
 
 (deftest test-dsl
   (testing "testing that the DSL generates the expected specmonstah, so testing the tests"
     (it/facts
       (perms [:root {:auth 1}])
-      =in=>
-      {:node [[:root {:refs {:parentId ::sm/omit}}]]
-       :user [[:user1 it/any]]
-       :user-authorization [[1 {:refs {:userId :user1
-                                       :securedObjectId :root}}]]}
+      =>
+      {:user [[:user1 {:spec-gen {:emailAddress "user1@akvo.org"}}]],
+       :user-authorization [[1 {:refs {:userId :user1 :securedObjectId ::sm/omit}}]],
+       :role [[1 {:spec-gen {:permissions #{"PROJECT_FOLDER_READ"}}}]]}
 
       (perms [:root {:auth 1}
               [:1
                [:1.1]]])
       =in=>
-      {:node ^:in-any-order [[:root it/any]
-                             [:1 {:refs {:parentId :root}}]
+      {:node ^:in-any-order [[:1 {:refs {:parentId ::sm/omit}}]
                              [:1.1 {:refs {:parentId :1}}]]}
 
       (perms [:root
@@ -90,9 +88,8 @@
               [:1]
               [:2 {:auth 1}]])
       =in=>
-      {:node ^:in-any-order [[:root it/any]
-                             [:1 {:refs {:parentId :root}}]
-                             [:2 {:refs {:parentId :root}}]]
+      {:node ^:in-any-order [[:1 {:refs {:parentId ::sm/omit}}]
+                             [:2 {:refs {:parentId ::sm/omit}}]]
        :user-authorization [[1 {:refs {:securedObjectId :2}}]]}
 
       (perms [:root
@@ -106,5 +103,4 @@
       (perms [:root
               [:1#survey {:auth 1}]])
       =in=>
-      {:node ^:in-any-order [[:root {:spec-gen {:name "root" :survey-group-type "FOLDER"}}]
-                             [:1 {:spec-gen {:name "1" :survey-group-type "SURVEY"}}]]})))
+      {:node ^:in-any-order [[:1 {:spec-gen {:name "1" :survey-group-type "SURVEY"}}]]})))
