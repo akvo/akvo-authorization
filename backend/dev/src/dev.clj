@@ -32,6 +32,9 @@
 (defn unilog-db []
   (:spec (get integrant.repl.state/system [:duct.database.sql/hikaricp :authz/unilog-db])))
 
+(defn local-db []
+  (:spec (get integrant.repl.state/system [:duct.database.sql/hikaricp :authz/authz-db])))
+
 (comment
 
   (clojure.java.jdbc/query (unilog-db) ["select 1"] {:transaction? false})

@@ -73,6 +73,17 @@
         ("userRoleCreated" "userRoleUpdated") ::userRole)
       (-> m :payload :entity))))
 
+(defn explain [m]
+  (s/explain ::event m)
+  (s/explain
+    (case (-> m :payload :eventType)
+      ("surveyGroupDeleted" "userDeleted" "userAuthorizationDeleted" "userRoleDeleted") ::delete
+      ("surveyGroupUpdated" "surveyGroupCreated") ::surveyGroup
+      ("userCreated" "userUpdated") ::user
+      ("userAuthorizationCreated" "userAuthorizationUpdated") ::userAuthorization
+      ("userRoleCreated" "userRoleUpdated") ::userRole)
+    (-> m :payload :entity)))
+
 (comment
   (gen/sample (s/gen ::surveyGroup))
 
