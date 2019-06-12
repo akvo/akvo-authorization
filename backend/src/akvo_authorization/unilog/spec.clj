@@ -2,23 +2,6 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]))
 
-(defn derive-all [h unilog-kind]
-  (-> h
-    (derive (keyword (str unilog-kind "Created")) (keyword unilog-kind))
-    (derive (keyword (str unilog-kind "Updated")) (keyword unilog-kind))
-    (derive (keyword (str unilog-kind "Deleted")) :delete)))
-
-(def event-type-hierarchy (->
-                            (make-hierarchy)
-                            (derive-all "user")
-                            (derive-all "userAuthorization")
-                            (derive-all "userRole")
-                            (derive-all "surveyGroup")))
-
-(defmulti event-type
-  (fn [event] (some-> event :eventType keyword))
-  :hierarchy #'event-type-hierarchy)
-
 (s/def ::id integer?)
 (s/def ::name string?)
 
@@ -28,7 +11,7 @@
 (s/def ::permissionList #{"20" "0" "10"})
 (s/def ::superAdmin #{true false})
 
-(defmethod event-type :user [_]
+(s/def ::user
   (s/keys
     :req-un
     [::emailAddress ::id ::permissionList ::superAdmin]
@@ -39,7 +22,7 @@
 (s/def ::userId ::id)
 (s/def ::securedObjectId integer?)
 
-(defmethod event-type :userAuthorization [_]
+(s/def ::userAuthorization
   (s/keys :req-un [::id ::roleId ::securedObjectId ::userId]))
 
 (s/def ::permissions (s/coll-of #{"DATA_UPDATE" "FORM_READ" "PROJECT_FOLDER_CREATE" "DATA_DELETE"
@@ -48,7 +31,7 @@
                                   "DATA_APPROVE_MANAGE" "PROJECT_FOLDER_DELETE" "FORM_DELETE"
                                   "PROJECT_FOLDER_UPDATE"}))
 
-(defmethod event-type :userRole [_]
+(s/def ::userRole
   (s/keys :req-un [::id ::name ::permissions]))
 
 (s/def ::parentId ::id)
@@ -56,35 +39,48 @@
 (s/def ::surveyGroupType #{"FOLDER" "SURVEY"})
 (s/def ::description string?)
 
-(defmethod event-type :surveyGroup [_]
+(s/def ::surveyGroup
   (s/keys
     :req-un
     [::id ::name ::public ::surveyGroupType]
     :opt-un
     [::description ::parentId]))
 
-(defmethod event-type :delete [_]
+(s/def ::delete
   (s/keys :req-un [::id]))
 
-(s/def ::entity (s/multi-spec event-type (fn [genv tag]
-                                           (assoc genv
-                                             :eventType
-                                             (if (= :delete tag)
-                                               (str (rand-nth ["user" "userAuthorization" "surveyGroup" "userRole"]) "Deleted")
-                                               (str (name tag) (rand-nth ["Updated" "Created"])))))))
-
 (s/def ::orgId string?)
-(s/def ::payload (s/keys :req-un [::entity ::orgId]))
+
+(defn types-for [kind]
+  #{(str kind "Updated")
+    (str kind "Created")
+    (str kind "Deleted")})
+
+(s/def ::eventType (set (mapcat types-for ["surveyGroup" "user" "userAuthorization" "userRole"])))
+(s/def ::entity map?)
+(s/def ::payload (s/keys :req-un [::eventType ::entity ::orgId]))
 (s/def ::event (s/keys :req-un [::id ::payload]))
 
-(comment
-  (gen/sample (s/gen ::event))
+(defn valid? [m]
+  (and
+    (s/valid? ::event m)
+    (s/valid?
+      (case (-> m :payload :eventType)
+        ("surveyGroupDeleted" "userDeleted" "userAuthorizationDeleted" "userRoleDeleted") ::delete
+        ("surveyGroupUpdated" "surveyGroupCreated") ::surveyGroup
+        ("userCreated" "userUpdated") ::user
+        ("userAuthorizationCreated" "userAuthorizationUpdated") ::userAuthorization
+        ("userRoleCreated" "userRoleUpdated") ::userRole)
+      (-> m :payload :entity))))
 
-  (s/unform ::event {:id 1
-                      :payload {:orgId "h"
-                                :entity {:id 12
-                                         :language "x"
-                                         :eventType "userCreated"
-                                         :permissionList "10"
-                                         :superAdmin true
-                                         :emailAddress "vrgc7P6dbwB57F"}}}))
+(comment
+  (gen/sample (s/gen ::surveyGroup))
+
+  (valid? {:id 1
+           :payload {:orgId "h"
+                     :eventType "userCreated"
+                     :entity {:id 12
+                              :language "x"
+                              :permissionList "10"
+                              :superAdmin true
+                              :emailAddress "vrgc7P6dbwB57F"}}}))
