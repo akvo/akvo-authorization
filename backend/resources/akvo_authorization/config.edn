@@ -3,7 +3,9 @@
 
   :duct.router/cascading [#ig/ref [:akvo-authorization.handler/monitoring]]
 
-  :duct.migrator/ragtime {:database #ig/ref :authz/authz-db}
+  :duct.migrator/ragtime {:database #ig/ref :authz/authz-db
+                          :migrations ^:replace #ig/ref :akvo-authorization.authz/migration}
+  :akvo-authorization.authz/migration {}
 
   :akvo-authorization.handler/monitoring {:db #ig/ref :authz/authz-db}
 

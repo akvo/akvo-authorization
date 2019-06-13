@@ -37,6 +37,9 @@
 
 (comment
 
-  (clojure.java.jdbc/query (unilog-db) ["select 1"] {:transaction? false})
+  (clojure.java.jdbc/query (local-db) ["select * from nodes"] {:transaction? false})
 
+  (do
+    (ragtime.core/rollback (ragtime.jdbc/sql-database (dev/local-db)) (first (ragtime.jdbc/load-resources "migrations")))
+    (ragtime.core/migrate-all (ragtime.jdbc/sql-database (dev/local-db)) {} (ragtime.jdbc/load-resources "migrations")))
   )

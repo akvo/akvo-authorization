@@ -10,7 +10,8 @@
                  [reifyhealth/specmonstah "2.0.0-alpha-1"]
                  [org.clojure/test.check "0.10.0-alpha3"]
                  [org.clojure/spec.alpha "0.2.176"]
-                 [org.postgresql/postgresql "42.2.5"]]
+                 [org.postgresql/postgresql "42.2.5"]
+                 [com.layerware/hugsql "0.4.9"]]
   :plugins [[duct/lein-duct "0.12.1"]]
   :main ^:skip-aot akvo-authorization.main
   :resource-paths ["resources" "target/resources"]
