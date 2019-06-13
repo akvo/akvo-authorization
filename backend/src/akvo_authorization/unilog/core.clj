@@ -1,12 +1,13 @@
 (ns akvo-authorization.unilog.core
   (:require [hugsql.core :as hugsql]
             [clojure.set :refer [rename-keys]]
+            [hugsql-adapter-case.adapters :as adapter-case]
             [clojure.java.jdbc :as jdbc]
             [clojure.data.json :as json])
   (:import (org.postgresql.util PGobject)))
 
-(hugsql/def-db-fns "sql/nodes.sql")
-(hugsql/def-db-fns "sql/user.sql")
+(hugsql/def-db-fns "sql/nodes.sql" {:adapter (adapter-case/kebab-adapter)})
+(hugsql/def-db-fns "sql/user.sql"{:adapter (adapter-case/kebab-adapter)})
 
 (defrecord ltree [v])
 
@@ -38,11 +39,6 @@
   (some->
     (get-node-by-flow-id db {:flow-instance flow-instance
                              :flow-id flow-id})
-    (rename-keys {:flow_id :flow-id
-                  :flow_instance :flow-instance
-                  :is_public :is-public
-                  :flow_parent_id :flow-parent-id
-                  :full_path :full-path})
     (update :full-path :v)))
 
 (defn insert-root-node [db flow-instance]
@@ -81,7 +77,7 @@
       (upsert-user-flow-id! tx (assoc user :user-id id)))))
 
 (defn upsert-user-auth [db {:keys [flow-instance flow-node-id flow-role-id flow-user-id flow-id]}]
-  (let [{user-id :user_id} (get-user-by-flow-id db {:flow-instance flow-instance :flow-id flow-user-id})
+  (let [{user-id :user-id} (get-user-by-flow-id db {:flow-instance flow-instance :flow-id flow-user-id})
         {role-id :id} (get-role-by-flow-id db {:flow-instance flow-instance :flow-id flow-role-id})
         {node-id :id} (get-node-by-flow-id db {:flow-instance flow-instance :flow-id flow-node-id})]
     (if (and
