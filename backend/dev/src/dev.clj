@@ -37,9 +37,13 @@
 
 (comment
 
+  (clojure.java.jdbc/query (local-db) ["select * from user_node_role"] {:transaction? false})
   (clojure.java.jdbc/query (local-db) ["select * from nodes"] {:transaction? false})
+  (clojure.java.jdbc/query (local-db) ["select * from roles"] {:transaction? false})
+  (clojure.java.jdbc/query (local-db) ["select * from users_flow_ids"] {:transaction? false})
 
   (do
-    (ragtime.core/rollback (ragtime.jdbc/sql-database (dev/local-db)) (first (ragtime.jdbc/load-resources "migrations")))
+    (doseq [m (reverse (ragtime.jdbc/load-resources "migrations"))]
+      (ragtime.core/rollback (ragtime.jdbc/sql-database (dev/local-db)) m))
     (ragtime.core/migrate-all (ragtime.jdbc/sql-database (dev/local-db)) {} (ragtime.jdbc/load-resources "migrations")))
   )

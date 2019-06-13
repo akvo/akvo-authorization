@@ -7,7 +7,7 @@ CREATE TABLE nodes (
   flow_id bigint NOT NULL,
   flow_parent_id bigint,
   full_path ltree NOT NULL,
-  constraint u_flow_full_id unique (flow_instance, flow_id));
+  constraint n_flow_full_id unique (flow_instance, flow_id));
 --;;
 CREATE INDEX nodes_parent_path_idx ON nodes USING GIST (full_path);
 --;;

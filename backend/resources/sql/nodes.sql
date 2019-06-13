@@ -10,7 +10,7 @@ VALUES (:id, :name, :type, :flow-id, :flow-instance, :flow-parent-id, :is-public
 -- :name insert-root-node! :<! :1
 INSERT INTO nodes (id, name, type, flow_id, flow_instance, flow_parent_id, is_public, full_path)
 VALUES (:id, :name, :type, :flow-id, :flow-instance, :flow-parent-id, :is-public, :full-path)
-ON CONFLICT ON CONSTRAINT u_flow_full_id DO NOTHING
+ON CONFLICT ON CONSTRAINT n_flow_full_id DO NOTHING
 RETURNING id
 
 -- :name next-node-id-seq :? :1

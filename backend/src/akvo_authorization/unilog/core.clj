@@ -6,6 +6,7 @@
   (:import (org.postgresql.util PGobject)))
 
 (hugsql/def-db-fns "sql/nodes.sql")
+(hugsql/def-db-fns "sql/user.sql")
 
 (defrecord ltree [v])
 
@@ -68,13 +69,45 @@
                        :id node-id
                        :full-path (->ltree (add-child parent node-id))))))
 
+(defn upsert-role [db {:keys [permissions] :as user-role}]
+  (jdbc/with-db-transaction [tx db]
+    (let [{:keys [id]} (upsert-role! tx user-role)]
+      (delete-role-perms-for-role! tx {:id id})
+      (create-role-perms! tx {:permissions (map (fn [p] [id p]) permissions)}))))
+
+(defn upsert-user [db user]
+  (jdbc/with-db-transaction [tx db]
+    (let [{:keys [id]} (upsert-user! tx user)]
+      (upsert-user-flow-id! tx (assoc user :user-id id)))))
+
+(defn upsert-user-auth [db {:keys [flow-instance flow-node-id flow-role-id flow-user-id flow-id]}]
+  (let [{user-id :user_id} (get-user-by-flow-id db {:flow-instance flow-instance :flow-id flow-user-id})
+        {role-id :id} (get-role-by-flow-id db {:flow-instance flow-instance :flow-id flow-role-id})
+        {node-id :id} (get-node-by-flow-id db {:flow-instance flow-instance :flow-id flow-node-id})]
+    (if (and
+          (not node-id)
+          (zero? flow-node-id))
+      (let [new-instance-root (:id (insert-root-node db flow-instance))]
+        (upsert-user-auth! db {:flow-id flow-id
+                               :flow-instance flow-instance
+                               :user-id user-id
+                               :role-id role-id
+                               :node-id new-instance-root}))
+      (upsert-user-auth! db {:flow-id flow-id
+                             :flow-instance flow-instance
+                             :user-id user-id
+                             :role-id role-id
+                             :node-id node-id}))))
+
 (defn process [db unilog-msgs]
   (doseq [msg unilog-msgs]
-    (if (= "surveyGroupCreated" (-> msg :payload :eventType))
-      (do
-        (let [e (-> msg :payload :entity)
-              flow-instance (-> msg :payload :orgId)
-              e (-> e
+    (let [type (-> msg :payload :eventType)
+          e (-> msg :payload :entity)
+          flow-instance (-> msg :payload :orgId)]
+      (case type
+
+        "surveyGroupCreated"
+        (let [e (-> e
                   (select-keys [:id :name :public :surveyGroupType :parentId])
                   (rename-keys {:public :is-public
                                 :surveyGroupType :type
@@ -85,14 +118,28 @@
             (insert-node db e parent)
             (if (is-root-folder-in-flow e)
               (let [new-instance-root (insert-root-node db flow-instance)]
-                (insert-node db e new-instance-root))))))
-      (println "ignoring "))))
+                (insert-node db e new-instance-root)))))
 
+        "userRoleCreated"
+        (upsert-role db (-> e
+                          (select-keys [:id :name :permissions])
+                          (rename-keys {:id :flow-id})
+                          (assoc :flow-instance flow-instance)))
 
-(comment
-  (clojure.java.jdbc/query (dev/local-db) ["select * from nodes where type!='ROOT'"] {:transaction? false})
+        "userCreated"
+        (upsert-user db (-> e
+                          (rename-keys {:id :flow-id
+                                        :emailAddress :email
+                                        :permissionList :permission-list
+                                        :superAdmin :super-admin})
+                          (assoc :flow-instance flow-instance)))
 
-  (do
-    (ragtime.core/rollback (ragtime.jdbc/sql-database (dev/local-db)) (first (ragtime.jdbc/load-resources "migrations")))
-    (ragtime.core/migrate-all (ragtime.jdbc/sql-database (dev/local-db)) {} (ragtime.jdbc/load-resources "migrations"))))
+        "userAuthorizationCreated"
+        (upsert-user-auth db (-> e
+                              (rename-keys {:id :flow-id
+                                            :roleId :flow-role-id
+                                            :userId :flow-user-id
+                                            :securedObjectId :flow-node-id})
+                              (assoc :flow-instance flow-instance)))
+        ))))
 
