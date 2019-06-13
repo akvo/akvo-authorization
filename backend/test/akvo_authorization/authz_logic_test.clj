@@ -97,13 +97,26 @@
     (unilog/process (dev/local-db) unilog-msg)))
 
 (defn can-see [user]
-  (authz/find-all-surveys (dev/local-db) (email user)))
+  (let [surveys (authz/find-all-surveys (dev/local-db) (email user))
+        instance-name-pairs (map (juxt
+                                   (comp keyword :flow-instance)
+                                   (comp keyword :name)) surveys)]
+    (set instance-name-pairs)))
 
 (deftest authz
   (testing "basic "
     (with-authz [:uat-instance {:auth 1}
-                 [:folder-1#survey]]
-      (is (= [:folder-1]) (can-see :user1)))))
+                 [:folder-1
+                  [:folder-1.1 {:auth 4}
+                   [:folder-1.1.1
+                    [:survey1#survey {:auth 2}]]
+                   [:folder-1.1.2 {:auth 3}
+                    [:survey2#survey]]]]]
+      (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user1)))
+      (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user4)))
+      (is (= #{[:uat-instance :survey1]} (can-see :user2)))
+      (is (= #{[:uat-instance :survey2]} (can-see :user3)))
+      (is (= #{} (can-see :user5))))))
 
 (deftest test-dsl
   (testing "testing that the DSL generates the expected specmonstah, so testing the tests"

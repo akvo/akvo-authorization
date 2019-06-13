@@ -10,6 +10,10 @@ DO
    SET email = :email
 RETURNING id
 
+-- :name get-user-by-email :? :1
+SELECT * from users
+WHERE email = :email
+
 -- :name upsert-user-flow-id! :i :n
 INSERT INTO users_flow_ids (user_id, email, flow_instance, flow_id, super_admin, permission_list)
 VALUES (:user-id, :email, :flow-instance, :flow-id, :super-admin, :permission-list)
