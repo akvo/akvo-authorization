@@ -22,7 +22,7 @@
         "json" (json/read-str value)
         "jsonb" (json/read-str value)
         "citext" (str value)
-        "ltree" (->ltree value)
+        "ltree" value
         value))))
 
 (extend-protocol jdbc/ISQLValue
@@ -40,8 +40,7 @@
 (defn find-node-by-flow-id [db flow-instance flow-id]
   (some->
     (get-node-by-flow-id db {:flow-instance flow-instance
-                             :flow-id flow-id})
-    (update :full-path :v)))
+                             :flow-id flow-id})))
 
 (defn insert-root-node [db flow-instance]
   (let [root-id (next-id db)]
@@ -102,9 +101,8 @@
         :nothing))))
 
 (defn delete-user [db {:keys [flow-instance] :as user}]
-  (let [user-id (delete-user-by-flow-id! db user)]
-    (if user-id
-      (delete-user-auth! db (assoc user-id :flow-instance flow-instance))))
+  (when-let [user-id (delete-user-by-flow-id! db user)]
+    (delete-user-auth! db (assoc user-id :flow-instance flow-instance)))
   :nothing)
 
 (defn delete-user-auth [db user-auth]
@@ -113,6 +111,11 @@
 
 (defn delete-role [db role]
   (delete-role-by-flow-id! db role)
+  :nothing)
+
+(defn delete-node [db node]
+  (when-let [deleted-node (delete-node-by-flow-id! db node)]
+    (delete-all-childs! db (update deleted-node :full-path ->ltree)))
   :nothing)
 
 (defn process-single [db msg]
@@ -173,7 +176,10 @@
                         (rename-keys {:id :flow-id})
                         (assoc :flow-instance flow-instance)))
 
-      :nothing
+      "surveyGroupDeleted"
+      (delete-node db (-> e
+                        (rename-keys {:id :flow-id})
+                        (assoc :flow-instance flow-instance)))
       )))
 
 (defn process [db unilog-msgs]

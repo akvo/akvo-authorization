@@ -122,6 +122,15 @@
                   (= (:id user) (:userId e)))))
       (map second))))
 
+(defn find-node [entities node-name]
+  (->> entities
+    (filter (fn [[type e]]
+              (and
+                (= :node type)
+                (= (name node-name) (:name e)))))
+    first
+    second))
+
 (defn find-role [entities]
   (->> entities
     (filter (fn [[type _]]
@@ -191,7 +200,27 @@
                                 [:survey1#survey]])
           role (find-role entities)]
       (delete :role :uat-instance role)
-      (is (= #{} (can-see :user1))))))
+      (is (= #{} (can-see :user1)))))
+  (testing "delete node"
+    (let [entities (with-authz [:uat-instance {:auth 1}
+                                [:folder-1
+                                 [:survey1#survey]
+                                 [:folder-1.1
+                                  [:folder-1.1.1
+                                   [:survey2#survey]]]]])
+          node (find-node entities :folder-1.1)]
+      (delete :node :uat-instance node)
+      (is (= #{[:uat-instance :survey1]} (can-see :user1)))))
+  (testing "delete node - permissions in survey"
+    (let [entities (with-authz [:uat-instance
+                                [:folder-1
+                                 [:survey1#survey {:auth 1}]
+                                 [:folder-1.1
+                                  [:folder-1.1.1
+                                   [:survey2#survey {:auth 1}]]]]])
+          node (find-node entities :folder-1.1)]
+      (delete :node :uat-instance node)
+      (is (= #{[:uat-instance :survey1]} (can-see :user1))))))
 
 (deftest should-process-later-user-auth-msg
   (let [any 1

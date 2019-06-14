@@ -15,3 +15,14 @@ RETURNING id
 
 -- :name next-node-id-seq :? :1
 select NEXTVAL('node_id_seq')
+
+-- :name delete-node-by-flow-id! :<! :1
+DELETE from nodes
+WHERE flow_id = :flow-id
+      AND flow_instance = :flow-instance
+RETURNING *
+
+-- :name delete-all-childs! :<! :*
+DELETE from nodes
+WHERE full_path <@ :full-path
+RETURNING *
