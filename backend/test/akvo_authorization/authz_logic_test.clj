@@ -14,12 +14,13 @@
             [clojure.spec.alpha :as s]
             [loom.attr :as lat]))
 
+(def ^:dynamic *test-run-id* 0)
+(defonce test-run-seq (atom 0))
+
 (defn wipe-db
   [f]
-  (doseq [m (reverse (ragtime/load-resources "migrations"))]
-    (ragtime.core/rollback (ragtime/sql-database (dev/local-db)) m))
-  (ragtime.core/migrate-all (ragtime/sql-database (dev/local-db)) {} (ragtime/load-resources "migrations"))
-  (f))
+  (binding [*test-run-id* (swap! test-run-seq inc)]
+    (f)))
 
 (use-fixtures :each wipe-db)
 
@@ -52,7 +53,7 @@
 (defn email
   [user-id]
   {:pre [(keyword? user-id)]}
-  (str (name user-id) "@akvo.org"))
+  (str (name user-id) "@akvo.org-" *test-run-id*))
 
 (defn perms* [parent [node-name & [maybe-attrs & more :as all]]]
   (let [[node-name type] (str/split (name node-name) #"#")
@@ -78,12 +79,6 @@
   (assoc (perms* nil tree)
     :role [[1 {:spec-gen {:permissions #{"PROJECT_FOLDER_READ"}}}]]))
 
-#_(defn db-transaction-fixture [f]
-    (jdbc/with-db-transaction [conn test-db-uri]
-      (jdbc/db-set-rollback-only! conn)
-      (binding [store (postgres/build conn)]
-        (f))))
-
 (defn ->unilog [flow-instance idx [type entity]]
   (let [fill-with-0 (fn [k]
                       (fn [e]
@@ -102,17 +97,23 @@
       (throw (ex-info "invalid data generated" {:data value})))
     value))
 
+(defn flow-instance-with-test-id [flow-instance]
+  (str (name flow-instance) "-" *test-run-id*))
+
 (defn with-authz [auth-tree & body]
   (let [entities (shuffle (get-entities (perms auth-tree)))
-        flow-instance (first auth-tree)
+        flow-instance (flow-instance-with-test-id (first auth-tree))
         unilog-msg (map-indexed (partial ->unilog flow-instance) entities)]
     (unilog/process (dev/local-db) unilog-msg)
     entities))
 
+(defn remove-test-run-id [s]
+  (str/replace s #"-[0-9]+$" ""))
+
 (defn can-see [user]
   (let [surveys (authz/find-all-surveys (dev/local-db) (email user))
         instance-name-pairs (map (juxt
-                                   (comp keyword :flow-instance)
+                                   (comp keyword remove-test-run-id :flow-instance)
                                    (comp keyword :name)) surveys)]
     (set instance-name-pairs)))
 
@@ -158,7 +159,7 @@
                              :role "userRoleDeleted"
                              :user-authorization "userAuthorizationDeleted"
                              :node "surveyGroupDeleted")
-                :orgId (name flow-instance)
+                :orgId (flow-instance-with-test-id flow-instance)
                 :entity {:id (:id entity)}}}]))
 
 (deftest authz
@@ -252,44 +253,45 @@
       )))
 
 (deftest test-dsl
-  (testing "testing that the DSL generates the expected specmonstah, so testing the tests"
-    (it/facts
-      (perms [:root {:auth 1}])
-      =>
-      {:user [[:user1 {:spec-gen {:emailAddress "user1@akvo.org"}}]],
-       :user-authorization [[1 {:refs {:userId :user1 :securedObjectId ::sm/omit}}]],
-       :role [[1 {:spec-gen {:permissions #{"PROJECT_FOLDER_READ"}}}]]}
+  (binding [*test-run-id* 99999]
+    (testing "testing that the DSL generates the expected specmonstah, so testing the tests"
+      (it/facts
+        (perms [:root {:auth 1}])
+        =>
+        {:user [[:user1 {:spec-gen {:emailAddress "user1@akvo.org-99999"}}]],
+         :user-authorization [[1 {:refs {:userId :user1 :securedObjectId ::sm/omit}}]],
+         :role [[1 {:spec-gen {:permissions #{"PROJECT_FOLDER_READ"}}}]]}
 
-      (perms [:root {:auth 1}
-              [:1
-               [:1.1]]])
-      =in=>
-      {:node ^:in-any-order [[:1 {:refs {:parentId ::sm/omit}}]
-                             [:1.1 {:refs {:parentId :1}}]]}
+        (perms [:root {:auth 1}
+                [:1
+                 [:1.1]]])
+        =in=>
+        {:node ^:in-any-order [[:1 {:refs {:parentId ::sm/omit}}]
+                               [:1.1 {:refs {:parentId :1}}]]}
 
-      (perms [:root
-              [:1
-               [:1.1 {:auth 1}]]])
-      =in=>
-      {:user-authorization [[1 {:refs {:securedObjectId :1.1}}]]}
+        (perms [:root
+                [:1
+                 [:1.1 {:auth 1}]]])
+        =in=>
+        {:user-authorization [[1 {:refs {:securedObjectId :1.1}}]]}
 
-      (perms [:root
-              [:1]
-              [:2 {:auth 1}]])
-      =in=>
-      {:node ^:in-any-order [[:1 {:refs {:parentId ::sm/omit}}]
-                             [:2 {:refs {:parentId ::sm/omit}}]]
-       :user-authorization [[1 {:refs {:securedObjectId :2}}]]}
+        (perms [:root
+                [:1]
+                [:2 {:auth 1}]])
+        =in=>
+        {:node ^:in-any-order [[:1 {:refs {:parentId ::sm/omit}}]
+                               [:2 {:refs {:parentId ::sm/omit}}]]
+         :user-authorization [[1 {:refs {:securedObjectId :2}}]]}
 
-      (perms [:root
-              [:1 {:auth 1}]
-              [:2 {:auth 2}]])
-      =in=>
-      {:user ^:in-any-order [[:user1 it/any] [:user2 it/any]]
-       :user-authorization ^:in-any-order [[1 {:refs {:userId :user1 :securedObjectId :1}}]
-                                           [1 {:refs {:userId :user2 :securedObjectId :2}}]]}
+        (perms [:root
+                [:1 {:auth 1}]
+                [:2 {:auth 2}]])
+        =in=>
+        {:user ^:in-any-order [[:user1 it/any] [:user2 it/any]]
+         :user-authorization ^:in-any-order [[1 {:refs {:userId :user1 :securedObjectId :1}}]
+                                             [1 {:refs {:userId :user2 :securedObjectId :2}}]]}
 
-      (perms [:root
-              [:1#survey {:auth 1}]])
-      =in=>
-      {:node ^:in-any-order [[:1 {:spec-gen {:name "1" :surveyGroupType "SURVEY"}}]]})))
+        (perms [:root
+                [:1#survey {:auth 1}]])
+        =in=>
+        {:node ^:in-any-order [[:1 {:spec-gen {:name "1" :surveyGroupType "SURVEY"}}]]}))))
