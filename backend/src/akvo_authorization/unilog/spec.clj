@@ -9,7 +9,7 @@
 (s/def ::userName string?)
 (s/def ::emailAddress string?)
 (s/def ::permissionList #{"20" "0" "10"})
-(s/def ::superAdmin #{true false})
+(s/def ::superAdmin boolean?)
 
 (s/def ::user
   (s/keys
@@ -35,7 +35,7 @@
   (s/keys :req-un [::id ::name ::permissions]))
 
 (s/def ::parentId ::id)
-(s/def ::public #{true false})
+(s/def ::public boolean?)
 (s/def ::surveyGroupType #{"FOLDER" "SURVEY"})
 (s/def ::description string?)
 
