@@ -84,3 +84,8 @@ DELETE FROM role_perms WHERE role = :id
 SELECT * FROM roles
 WHERE flow_id = :flow-id
     AND flow_instance = :flow-instance
+
+-- :name delete-role-by-flow-id! :!
+DELETE from roles
+WHERE flow_id = :flow-id
+      AND flow_instance = :flow-instance

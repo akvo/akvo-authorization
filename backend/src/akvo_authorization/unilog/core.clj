@@ -111,6 +111,10 @@
   (delete-user-auth-by-flow-id! db user-auth)
   :nothing)
 
+(defn delete-role [db role]
+  (delete-role-by-flow-id! db role)
+  :nothing)
+
 (defn process-single [db msg]
   (let [type (-> msg :payload :eventType)
         e (-> msg :payload :entity)
@@ -163,6 +167,11 @@
       (delete-user-auth db (-> e
                              (rename-keys {:id :flow-id})
                              (assoc :flow-instance flow-instance)))
+
+      "userRoleDeleted"
+      (delete-role db (-> e
+                        (rename-keys {:id :flow-id})
+                        (assoc :flow-instance flow-instance)))
 
       :nothing
       )))

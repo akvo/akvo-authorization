@@ -122,6 +122,13 @@
                   (= (:id user) (:userId e)))))
       (map second))))
 
+(defn find-role [entities]
+  (->> entities
+    (filter (fn [[type _]]
+              (= :role type)))
+    first
+    second))
+
 (defn delete [type flow-instance entity]
   (unilog/process (dev/local-db)
     [{:id (rand-int 100000)
@@ -178,7 +185,13 @@
             user-auths (find-user-auths entities :user1)]
         (doseq [user-auth user-auths]
           (delete :user-authorization :uat-instance user-auth))
-        (is (= #{} (can-see :user1))))))
+        (is (= #{} (can-see :user1)))))
+  (testing "delete role"
+    (let [entities (with-authz [:uat-instance {:auth 1}
+                                [:survey1#survey]])
+          role (find-role entities)]
+      (delete :role :uat-instance role)
+      (is (= #{} (can-see :user1))))))
 
 (deftest should-process-later-user-auth-msg
   (let [any 1
