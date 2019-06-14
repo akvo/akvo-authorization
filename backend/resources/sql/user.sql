@@ -31,6 +31,12 @@ SELECT * FROM users_flow_ids
 WHERE flow_id = :flow-id
       AND flow_instance = :flow-instance
 
+-- :name delete-user-by-flow-id! :<! :1
+DELETE from users_flow_ids
+WHERE flow_id = :flow-id
+      AND flow_instance = :flow-instance
+RETURNING user_id
+
 -- :name upsert-user-auth! :!
 INSERT INTO user_node_role (flow_instance, flow_id, node_id, user_id, role_id)
 VALUES (:flow-instance, :flow-id, :node-id, :user-id, :role-id)
@@ -41,6 +47,11 @@ DO
         user_id = :user-id,
         role_id = :role-id
 RETURNING *
+
+-- :name delete-user-auth! :!
+DELETE from user_node_role
+WHERE user_id = :user-id
+      AND flow_instance = :flow-instance
 
 -- :name upsert-role! :<! :1
 INSERT INTO roles (flow_instance, flow_id, name)

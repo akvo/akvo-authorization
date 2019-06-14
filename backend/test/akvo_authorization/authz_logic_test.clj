@@ -94,7 +94,8 @@
   (let [entities (shuffle (get-entities (perms auth-tree)))
         flow-instance (first auth-tree)
         unilog-msg (map-indexed (partial ->unilog flow-instance) entities)]
-    (unilog/process (dev/local-db) unilog-msg)))
+    (unilog/process (dev/local-db) unilog-msg)
+    entities))
 
 (defn can-see [user]
   (let [surveys (authz/find-all-surveys (dev/local-db) (email user))
@@ -102,6 +103,22 @@
                                    (comp keyword :flow-instance)
                                    (comp keyword :name)) surveys)]
     (set instance-name-pairs)))
+
+(defn find-user [entities user]
+  (->> entities
+    (filter (fn [[type e]]
+              (and
+                (= :user type)
+                (= (email user) (:emailAddress e)))))
+    first
+    second))
+
+(defn delete [flow-instance user]
+  (unilog/process (dev/local-db)
+    [{:id (rand-int 100000)
+      :payload {:eventType "userDeleted"
+                :orgId (name flow-instance)
+                :entity {:id (:id user)}}}]))
 
 (deftest authz
   (testing "basic "
@@ -116,7 +133,32 @@
     (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user4)))
     (is (= #{[:uat-instance :survey1]} (can-see :user2)))
     (is (= #{[:uat-instance :survey2]} (can-see :user3)))
-    (is (= #{} (can-see :user5)))))
+    (is (= #{} (can-see :user5))))
+  (testing "same user in multiple instances"
+    (with-authz [:uat-instance {:auth 1}
+                 [:folder-1
+                  [:survey1#survey]]])
+    (with-authz [:prod-instance
+                 [:folder-1
+                  [:folder-1.1
+                   [:folder-1.1.2 {:auth 1}
+                    [:survey1#survey]]]]])
+    (is (= #{[:uat-instance :survey1] [:prod-instance :survey1]} (can-see :user1)))))
+
+(deftest deleting
+  (testing "delete user"
+    (let [entities (with-authz [:uat-instance {:auth 1}
+                                [:survey1#survey]])
+          user (find-user entities :user1)]
+      (delete :uat-instance user)
+      (is (= #{} (can-see :user1)))))
+  (testing "Deleting a user in a flow instance does not affect his perms in other instances"
+    (let [entities (with-authz [:uat-instance {:auth 1}
+                                [:survey1#survey]])
+          _ (with-authz [:prod-instance
+                         [:survey1#survey {:auth 1}]])]
+      (delete :uat-instance (find-user entities :user1))
+      (is (= #{[:prod-instance :survey1]} (can-see :user1))))))
 
 (deftest should-process-later-user-auth-msg
   (let [any 1

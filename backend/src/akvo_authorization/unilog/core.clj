@@ -101,6 +101,14 @@
                                :node-id (or node-id (:id (insert-root-node db flow-instance)))})
         :nothing))))
 
+(defn delete-user [db {:keys [flow-instance] :as user}]
+  (let [user-id (delete-user-by-flow-id! db user)]
+    (if user-id
+      (do
+        (delete-user-auth! db (assoc user-id :flow-instance flow-instance))
+        :nothing)
+      :nothing)))
+
 (defn process-single [db msg]
   (let [type (-> msg :payload :eventType)
         e (-> msg :payload :entity)
@@ -143,6 +151,12 @@
                                            :userId :flow-user-id
                                            :securedObjectId :flow-node-id})
                              (assoc :flow-instance flow-instance)))
+
+      "userDeleted"
+      (delete-user db (-> e
+                        (rename-keys {:id :flow-id})
+                        (assoc :flow-instance flow-instance)))
+
       :nothing
       )))
 
