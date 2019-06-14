@@ -41,6 +41,7 @@
   (clojure.java.jdbc/query (local-db) ["select * from nodes"] {:transaction? false})
   (clojure.java.jdbc/query (local-db) ["select * from roles"] {:transaction? false})
   (clojure.java.jdbc/query (local-db) ["select * from users_flow_ids"] {:transaction? false})
+  (clojure.java.jdbc/query (local-db) ["select * from process_later_messages"] {:transaction? false})
 
   (do
     (doseq [m (reverse (ragtime.jdbc/load-resources "migrations"))]

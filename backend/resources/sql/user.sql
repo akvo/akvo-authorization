@@ -53,6 +53,11 @@ DELETE from user_node_role
 WHERE user_id = :user-id
       AND flow_instance = :flow-instance
 
+-- :name delete-user-auth-by-flow-id! :!
+DELETE from user_node_role
+WHERE flow_id = :flow-id
+      AND flow_instance = :flow-instance
+
 -- :name upsert-role! :<! :1
 INSERT INTO roles (flow_instance, flow_id, name)
 VALUES

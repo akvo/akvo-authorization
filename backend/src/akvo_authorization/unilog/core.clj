@@ -104,10 +104,12 @@
 (defn delete-user [db {:keys [flow-instance] :as user}]
   (let [user-id (delete-user-by-flow-id! db user)]
     (if user-id
-      (do
-        (delete-user-auth! db (assoc user-id :flow-instance flow-instance))
-        :nothing)
-      :nothing)))
+      (delete-user-auth! db (assoc user-id :flow-instance flow-instance))))
+  :nothing)
+
+(defn delete-user-auth [db user-auth]
+  (delete-user-auth-by-flow-id! db user-auth)
+  :nothing)
 
 (defn process-single [db msg]
   (let [type (-> msg :payload :eventType)
@@ -156,6 +158,11 @@
       (delete-user db (-> e
                         (rename-keys {:id :flow-id})
                         (assoc :flow-instance flow-instance)))
+
+      "userAuthorizationDeleted"
+      (delete-user-auth db (-> e
+                             (rename-keys {:id :flow-id})
+                             (assoc :flow-instance flow-instance)))
 
       :nothing
       )))

@@ -113,12 +113,25 @@
     first
     second))
 
-(defn delete [flow-instance user]
+(defn find-user-auths [entities user]
+  (when-let [user (find-user entities user)]
+    (->> entities
+      (filter (fn [[type e]]
+                (and
+                  (= :user-authorization type)
+                  (= (:id user) (:userId e)))))
+      (map second))))
+
+(defn delete [type flow-instance entity]
   (unilog/process (dev/local-db)
     [{:id (rand-int 100000)
-      :payload {:eventType "userDeleted"
+      :payload {:eventType (case type
+                             :user "userDeleted"
+                             :role "userRoleDeleted"
+                             :user-authorization "userAuthorizationDeleted"
+                             :node "surveyGroupDeleted")
                 :orgId (name flow-instance)
-                :entity {:id (:id user)}}}]))
+                :entity {:id (:id entity)}}}]))
 
 (deftest authz
   (testing "basic "
@@ -150,15 +163,22 @@
     (let [entities (with-authz [:uat-instance {:auth 1}
                                 [:survey1#survey]])
           user (find-user entities :user1)]
-      (delete :uat-instance user)
+      (delete :user :uat-instance user)
       (is (= #{} (can-see :user1)))))
   (testing "Deleting a user in a flow instance does not affect his perms in other instances"
     (let [entities (with-authz [:uat-instance {:auth 1}
                                 [:survey1#survey]])
           _ (with-authz [:prod-instance
                          [:survey1#survey {:auth 1}]])]
-      (delete :uat-instance (find-user entities :user1))
-      (is (= #{[:prod-instance :survey1]} (can-see :user1))))))
+      (delete :user :uat-instance (find-user entities :user1))
+      (is (= #{[:prod-instance :survey1]} (can-see :user1)))))
+  (testing "delete user auth"
+      (let [entities (with-authz [:uat-instance {:auth 1}
+                                  [:survey1#survey]])
+            user-auths (find-user-auths entities :user1)]
+        (doseq [user-auth user-auths]
+          (delete :user-authorization :uat-instance user-auth))
+        (is (= #{} (can-see :user1))))))
 
 (deftest should-process-later-user-auth-msg
   (let [any 1
