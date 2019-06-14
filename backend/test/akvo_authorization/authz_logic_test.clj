@@ -5,11 +5,23 @@
             [akvo-authorization.unilog.core :as unilog]
             [akvo-authorization.authz :as authz]
             [reifyhealth.specmonstah.core :as sm]
+            [ragtime.jdbc :as ragtime]
             [reifyhealth.specmonstah.spec-gen :as sg]
             [akvo-authorization.unilog.spec :as unilog-spec]
             [testit.core :as it :refer [=in=> fact =>]]
             [clojure.string :as str]
-            [clojure.java.jdbc :as jdbc]))
+            [clojure.java.jdbc :as jdbc]
+            [clojure.spec.alpha :as s]
+            [loom.attr :as lat]))
+
+(defn wipe-db
+  [f]
+  (doseq [m (reverse (ragtime/load-resources "migrations"))]
+    (ragtime.core/rollback (ragtime/sql-database (dev/local-db)) m))
+  (ragtime.core/migrate-all (ragtime/sql-database (dev/local-db)) {} (ragtime/load-resources "migrations"))
+  (f))
+
+(use-fixtures :each wipe-db)
 
 (def schema
   {:user {:prefix :u
@@ -162,65 +174,70 @@
     (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user4)))
     (is (= #{[:uat-instance :survey1]} (can-see :user2)))
     (is (= #{[:uat-instance :survey2]} (can-see :user3)))
-    (is (= #{} (can-see :user5))))
-  (testing "same user in multiple instances"
-    (with-authz [:uat-instance {:auth 1}
-                 [:folder-1
-                  [:survey1#survey]]])
-    (with-authz [:prod-instance
-                 [:folder-1
-                  [:folder-1.1
-                   [:folder-1.1.2 {:auth 1}
-                    [:survey1#survey]]]]])
-    (is (= #{[:uat-instance :survey1] [:prod-instance :survey1]} (can-see :user1)))))
+    (is (= #{} (can-see :user5)))))
 
-(deftest deleting
-  (testing "delete user"
-    (let [entities (with-authz [:uat-instance {:auth 1}
-                                [:survey1#survey]])
-          user (find-user entities :user1)]
-      (delete :user :uat-instance user)
-      (is (= #{} (can-see :user1)))))
-  (testing "Deleting a user in a flow instance does not affect his perms in other instances"
-    (let [entities (with-authz [:uat-instance {:auth 1}
-                                [:survey1#survey]])
-          _ (with-authz [:prod-instance
-                         [:survey1#survey {:auth 1}]])]
-      (delete :user :uat-instance (find-user entities :user1))
-      (is (= #{[:prod-instance :survey1]} (can-see :user1)))))
-  (testing "delete user auth"
-      (let [entities (with-authz [:uat-instance {:auth 1}
-                                  [:survey1#survey]])
-            user-auths (find-user-auths entities :user1)]
-        (doseq [user-auth user-auths]
-          (delete :user-authorization :uat-instance user-auth))
-        (is (= #{} (can-see :user1)))))
-  (testing "delete role"
-    (let [entities (with-authz [:uat-instance {:auth 1}
-                                [:survey1#survey]])
-          role (find-role entities)]
-      (delete :role :uat-instance role)
-      (is (= #{} (can-see :user1)))))
-  (testing "delete node"
-    (let [entities (with-authz [:uat-instance {:auth 1}
-                                [:folder-1
-                                 [:survey1#survey]
-                                 [:folder-1.1
-                                  [:folder-1.1.1
-                                   [:survey2#survey]]]]])
-          node (find-node entities :folder-1.1)]
-      (delete :node :uat-instance node)
-      (is (= #{[:uat-instance :survey1]} (can-see :user1)))))
-  (testing "delete node - permissions in survey"
-    (let [entities (with-authz [:uat-instance
-                                [:folder-1
-                                 [:survey1#survey {:auth 1}]
-                                 [:folder-1.1
-                                  [:folder-1.1.1
-                                   [:survey2#survey {:auth 1}]]]]])
-          node (find-node entities :folder-1.1)]
-      (delete :node :uat-instance node)
-      (is (= #{[:uat-instance :survey1]} (can-see :user1))))))
+(deftest authz-multiple-instances
+  (with-authz [:uat-instance {:auth 1}
+               [:folder-1
+                [:survey1#survey]]])
+  (with-authz [:prod-instance
+               [:folder-1
+                [:folder-1.1
+                 [:folder-1.1.2 {:auth 1}
+                  [:survey1#survey]]]]])
+  (is (= #{[:uat-instance :survey1] [:prod-instance :survey1]} (can-see :user1))))
+
+(deftest delete-user
+  (let [entities (with-authz [:uat-instance {:auth 1}
+                              [:survey1#survey]])
+        user (find-user entities :user1)]
+    (delete :user :uat-instance user)
+    (is (= #{} (can-see :user1)))))
+
+(deftest delete-user-in-a-flow-instance-does-not-affect-his-perms-in-another-instance
+  (let [entities (with-authz [:uat-instance {:auth 1}
+                              [:survey1#survey]])
+        _ (with-authz [:prod-instance
+                       [:survey1#survey {:auth 1}]])]
+    (delete :user :uat-instance (find-user entities :user1))
+    (is (= #{[:prod-instance :survey1]} (can-see :user1)))))
+
+(deftest delete-user-auth
+  (let [entities (with-authz [:uat-instance {:auth 1}
+                              [:survey1#survey]])
+        user-auths (find-user-auths entities :user1)]
+    (doseq [user-auth user-auths]
+      (delete :user-authorization :uat-instance user-auth))
+    (is (= #{} (can-see :user1)))))
+
+(deftest delete-role
+  (let [entities (with-authz [:uat-instance {:auth 1}
+                              [:survey1#survey]])
+        role (find-role entities)]
+    (delete :role :uat-instance role)
+    (is (= #{} (can-see :user1)))))
+
+(deftest delete-node
+  (let [entities (with-authz [:uat-instance {:auth 1}
+                              [:folder-1
+                               [:survey1#survey]
+                               [:folder-1.1
+                                [:folder-1.1.1
+                                 [:survey2#survey]]]]])
+        node (find-node entities :folder-1.1)]
+    (delete :node :uat-instance node)
+    (is (= #{[:uat-instance :survey1]} (can-see :user1)))))
+
+(deftest delete-node-with-perms-attached-to-survey
+  (let [entities (with-authz [:uat-instance
+                              [:folder-1
+                               [:survey1#survey {:auth 1}]
+                               [:folder-1.1
+                                [:folder-1.1.1
+                                 [:survey2#survey {:auth 1}]]]]])
+        node (find-node entities :folder-1.1)]
+    (delete :node :uat-instance node)
+    (is (= #{[:uat-instance :survey1]} (can-see :user1)))))
 
 (deftest should-process-later-user-auth-msg
   (let [any 1
