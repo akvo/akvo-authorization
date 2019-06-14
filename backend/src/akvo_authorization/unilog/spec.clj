@@ -1,8 +1,11 @@
 (ns akvo-authorization.unilog.spec
   (:require [clojure.spec.alpha :as s]
-            [clojure.spec.gen.alpha :as gen]))
+            [clojure.spec.gen.alpha :as gen]
+            [reifyhealth.specmonstah.spec-gen :as sg]))
 
-(s/def ::id integer?)
+(def id-seq (atom 1))
+(s/def ::id (s/with-gen integer? #(gen/fmap (fn [_] (swap! id-seq inc)) (gen/return nil))))
+
 (s/def ::name string?)
 
 (s/def ::language string?)
@@ -20,7 +23,7 @@
 
 (s/def ::roleId ::id)
 (s/def ::userId ::id)
-(s/def ::securedObjectId integer?)
+(s/def ::securedObjectId ::id)
 
 (s/def ::userAuthorization
   (s/keys :req-un [::id ::roleId ::securedObjectId ::userId]))
