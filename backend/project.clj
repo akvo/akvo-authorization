@@ -12,6 +12,7 @@
                  [org.clojure/spec.alpha "0.2.176"]
                  [org.postgresql/postgresql "42.2.5"]
                  [hugsql-adapter-case "0.1.0"]
+                 [com.taoensso/nippy "2.14.0"]
                  [com.layerware/hugsql "0.4.9"]]
   :plugins [[duct/lein-duct "0.12.1"]]
   :main ^:skip-aot akvo-authorization.main

@@ -91,7 +91,7 @@
     value))
 
 (defn with-authz [auth-tree & body]
-  (let [entities (get-entities (perms auth-tree))
+  (let [entities (shuffle (get-entities (perms auth-tree)))
         flow-instance (first auth-tree)
         unilog-msg (map-indexed (partial ->unilog flow-instance) entities)]
     (unilog/process (dev/local-db) unilog-msg)))
@@ -111,12 +111,24 @@
                    [:folder-1.1.1
                     [:survey1#survey {:auth 2}]]
                    [:folder-1.1.2 {:auth 3}
-                    [:survey2#survey]]]]]
-      (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user1)))
-      (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user4)))
-      (is (= #{[:uat-instance :survey1]} (can-see :user2)))
-      (is (= #{[:uat-instance :survey2]} (can-see :user3)))
-      (is (= #{} (can-see :user5))))))
+                    [:survey2#survey]]]]])
+    (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user1)))
+    (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user4)))
+    (is (= #{[:uat-instance :survey1]} (can-see :user2)))
+    (is (= #{[:uat-instance :survey2]} (can-see :user3)))
+    (is (= #{} (can-see :user5)))))
+
+(deftest should-process-later-user-auth-msg
+  (let [any 1
+        flow-root 0]
+    (are [expected role-id user-id node-id flow-node-id] (= expected (unilog/should-process-later? role-id user-id node-id flow-node-id))
+      true nil nil nil flow-root
+      true nil any any flow-root
+      true any nil any flow-root
+      true any any nil any
+      false any any nil flow-root
+      false any any any any
+      )))
 
 (deftest test-dsl
   (testing "testing that the DSL generates the expected specmonstah, so testing the tests"
