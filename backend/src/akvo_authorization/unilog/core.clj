@@ -198,35 +198,36 @@
                        :flow-id (-> msg :payload :entity :id)
                        :entity-type (-> msg :payload :eventType kind)}))))
 
+(defn process-message-batch* [db [stored-message & more] reprocess?]
+  (if-not stored-message
+    reprocess?
+    (case (process-single db (nippy/thaw (:message stored-message)))
+      :nothing (do
+                 (delete-message db stored-message)
+                 (recur db more reprocess?))
+      :process-later (recur db more reprocess?)
+      :delete-related (do
+                        (delete-messages-related! db stored-message)
+                        (recur
+                          db
+                          (remove (fn [m]
+                                    (and
+                                      (= (:flow-instance m) (:flow-instance stored-message))
+                                      (= (:entity-type m) (:entity-type stored-message))
+                                      (= (:flow-id m) (:flow-instance m))))
+                            more)
+                          reprocess?))
+      :reprocess-queue (do
+                         (delete-messages-related-before! db stored-message)
+                         (recur db more true)))))
+
 (defn process [db unilog-msgs]
   ;; TODO: assuming all messages are for the same flow-instance!!!!! Assert this.
   (let [stored-messages (store-messages! db unilog-msgs)]
     (loop [batch-number 0
-           messages stored-messages]
-      (println batch-number)
-      (let [results (loop [[stored-message & more] messages
-                           reprocess false]
-                      (if stored-message
-                        (let [result (process-single db (nippy/thaw (:message stored-message)))]
-                          (case result
-                            :nothing (do
-                                       (delete-message db stored-message)
-                                       (recur more reprocess))
-                            :process-later (recur more reprocess)
-                            :delete-related (do
-                                              (delete-messages-related! db stored-message)
-                                              (recur
-                                                (remove (fn [m]
-                                                          (and
-                                                            (= (:flow-instance m) (:flow-instance stored-message))
-                                                            (= (-> m :entity-type kind) (-> stored-message :entity-type kind))
-                                                            (= (-> m :flow-id) (-> m :flow-instance))))
-                                                  more)
-                                                reprocess))
-                            :reprocess-queue (do
-                                               (delete-messages-related-before! db stored-message)
-                                               (recur more true))))
-                        reprocess))]
-        (when results
-          (recur (inc batch-number)
-            (messages-for-flow-instance db (first messages))))))))
+           batch stored-messages]
+      (let [reprocess-from-start? (process-message-batch* db batch false)]
+        (when reprocess-from-start?
+          (recur
+            (inc batch-number)
+            (messages-for-flow-instance db (first batch))))))))
