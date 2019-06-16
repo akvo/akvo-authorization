@@ -4,7 +4,8 @@
             [hugsql-adapter-case.adapters :as adapter-case]
             [clojure.java.jdbc :as jdbc]
             [taoensso.nippy :as nippy]
-            [clojure.data.json :as json])
+            [clojure.data.json :as json]
+            [clojure.string :as str])
   (:import (org.postgresql.util PGobject)))
 
 (hugsql/def-db-fns "sql/nodes.sql" {:adapter (adapter-case/kebab-adapter)})
@@ -103,20 +104,20 @@
 (defn delete-user [db {:keys [flow-instance] :as user}]
   (when-let [user-id (delete-user-by-flow-id! db user)]
     (delete-user-auth! db (assoc user-id :flow-instance flow-instance)))
-  :nothing)
+  :delete-related)
 
 (defn delete-user-auth [db user-auth]
   (delete-user-auth-by-flow-id! db user-auth)
-  :nothing)
+  :delete-related)
 
 (defn delete-role [db role]
   (delete-role-by-flow-id! db role)
-  :nothing)
+  :delete-related)
 
 (defn delete-node [db node]
   (when-let [deleted-node (delete-node-by-flow-id! db node)]
     (delete-all-childs! db (update deleted-node :full-path ->ltree)))
-  :nothing)
+  :delete-related)
 
 (defn process-single [db msg]
   (let [type (-> msg :payload :eventType)
@@ -182,22 +183,50 @@
                         (assoc :flow-instance flow-instance)))
       )))
 
+(defn kind [event-type]
+  ;; Probably we should use the type in the entity, but that would mean generating the proper
+  ;; value in the tests, which I cannot be bothered right now.
+  ;; Deleted/Created/Updated all happen to have the same number of chars
+  (str/replace event-type #".......$" ""))
+
+(defn store-messages! [db unilog-msgs]
+  (doall
+    (for [msg unilog-msgs]
+      (add-message db {:message (nippy/freeze msg)
+                       :unilog-id (-> msg :id)
+                       :flow-instance (-> msg :payload :orgId)
+                       :flow-id (-> msg :payload :entity :id)
+                       :entity-type (-> msg :payload :eventType kind)}))))
+
 (defn process [db unilog-msgs]
   ;; TODO: assuming all messages are for the same flow-instance!!!!! Assert this.
-  (let [stored-messages (for [msg unilog-msgs]
-                          (let [id (-> msg :id)
-                                flow-instance (-> msg :payload :orgId)]
-                            (add-message db {:message (nippy/freeze msg)
-                                             :unilog-id id
-                                             :flow-instance flow-instance})))]
-    (loop [[stored-message & more] stored-messages]
-      (when stored-message
-        (let [result (process-single db (nippy/thaw (:message stored-message)))]
-          (case result
-            :nothing (do
-                       (delete-message db stored-message)
-                       (recur more))
-            :process-later (recur more)
-            :reprocess-queue (do
-                               (delete-message db stored-message)
-                               (recur (messages-for-flow-instance db stored-message)))))))))
+  (let [stored-messages (store-messages! db unilog-msgs)]
+    (loop [batch-number 0
+           messages stored-messages]
+      (println batch-number)
+      (let [results (loop [[stored-message & more] messages
+                           reprocess false]
+                      (if stored-message
+                        (let [result (process-single db (nippy/thaw (:message stored-message)))]
+                          (case result
+                            :nothing (do
+                                       (delete-message db stored-message)
+                                       (recur more reprocess))
+                            :process-later (recur more reprocess)
+                            :delete-related (do
+                                              (delete-messages-related! db stored-message)
+                                              (recur
+                                                (remove (fn [m]
+                                                          (and
+                                                            (= (:flow-instance m) (:flow-instance stored-message))
+                                                            (= (-> m :entity-type kind) (-> stored-message :entity-type kind))
+                                                            (= (-> m :flow-id) (-> m :flow-instance))))
+                                                  more)
+                                                reprocess))
+                            :reprocess-queue (do
+                                               (delete-messages-related-before! db stored-message)
+                                               (recur more true))))
+                        reprocess))]
+        (when results
+          (recur (inc batch-number)
+            (messages-for-flow-instance db (first messages))))))))
