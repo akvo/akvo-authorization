@@ -1,28 +1,35 @@
 (ns akvo-authorization.authz-logic-test
   (:require [clojure.test :refer :all]
             [integrant.core :as ig]
-            [ring.mock.request :as mock]
             [akvo-authorization.unilog.core :as unilog]
             [akvo-authorization.authz :as authz]
+            [ragtime.core :as ragtime]
+            ragtime.jdbc
             [reifyhealth.specmonstah.core :as sm]
-            [ragtime.jdbc :as ragtime]
             [reifyhealth.specmonstah.spec-gen :as sg]
             [akvo-authorization.unilog.spec :as unilog-spec]
             [testit.core :as it :refer [=in=> fact =>]]
-            [clojure.string :as str]
-            [clojure.java.jdbc :as jdbc]
-            [clojure.spec.alpha :as s]
-            [loom.attr :as lat]))
+            [clojure.string :as str]))
 
 (def ^:dynamic *test-run-id* 0)
 (defonce test-run-seq (atom 0))
 
-(defn wipe-db
+(defn unique-run-number
   [f]
   (binding [*test-run-id* (swap! test-run-seq inc)]
     (f)))
 
-(use-fixtures :each wipe-db)
+(defn wipe-db [f]
+  (doseq [m (reverse (ragtime.jdbc/load-resources "migrations"))]
+    (ragtime/rollback (ragtime.jdbc/sql-database (dev/local-db)) m))
+  (ragtime/migrate-all
+    (ragtime.jdbc/sql-database (dev/local-db))
+    {}
+    (ragtime.jdbc/load-resources "migrations"))
+  (f))
+
+(use-fixtures :each unique-run-number)
+(use-fixtures :once wipe-db)
 
 (def schema
   {:user {:prefix :u
@@ -305,10 +312,6 @@
              (zero? (:fail x))
              (zero? (:error x))
              (> 3000 @so-far)))
-    (swap! so-far inc)
-    (comment (do
-              (doseq [m (reverse (ragtime.jdbc/load-resources "migrations"))]
-                (ragtime.core/rollback (ragtime.jdbc/sql-database (dev/local-db)) m))
-              (ragtime.core/migrate-all (ragtime.jdbc/sql-database (dev/local-db)) {} (ragtime.jdbc/load-resources "migrations")))))
+    (swap! so-far inc))
 
   )
