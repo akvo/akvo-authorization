@@ -1,4 +1,4 @@
-x(ns akvo-authorization.unilog.spec
+(ns akvo-authorization.unilog.spec
   (:require [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]))
 
