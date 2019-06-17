@@ -61,7 +61,8 @@
         next-parent (if parent node-name ::sm/omit)
         user-auth (if (map? maybe-attrs)
                     (let [user-id (keyword (str "user" (get maybe-attrs :auth)))]
-                      {:user [[user-id {:spec-gen {:emailAddress (email user-id)}}]]
+                      {:user [[user-id {:spec-gen {:emailAddress (email user-id)
+                                                   :superAdmin false}}]]
                        :user-authorization [[1 {:refs {:userId user-id
                                                        :securedObjectId next-parent}}]]}))
         children (map
@@ -76,8 +77,7 @@
       children)))
 
 (defn perms [tree]
-  (assoc (perms* nil tree)
-    :role [[1 {:spec-gen {:permissions #{"PROJECT_FOLDER_READ"}}}]]))
+  (perms* nil tree))
 
 (defn ->unilog [flow-instance idx [type entity]]
   (let [fill-with-0 (fn [k]
@@ -237,6 +237,7 @@
                                 [:folder-1.1.1
                                  [:survey2#survey {:auth 1}]]]]])
         node (find-node entities :folder-1.1)]
+    (println "hi!!")
     (delete :node :uat-instance node)
     (is (= #{[:uat-instance :survey1]} (can-see :user1)))))
 
@@ -258,9 +259,8 @@
       (it/facts
         (perms [:root {:auth 1}])
         =>
-        {:user [[:user1 {:spec-gen {:emailAddress "user1@akvo.org-99999"}}]],
-         :user-authorization [[1 {:refs {:userId :user1 :securedObjectId ::sm/omit}}]],
-         :role [[1 {:spec-gen {:permissions #{"PROJECT_FOLDER_READ"}}}]]}
+        {:user [[:user1 {:spec-gen {:emailAddress "user1@akvo.org-99999" :superAdmin false}}]],
+         :user-authorization [[1 {:refs {:userId :user1 :securedObjectId ::sm/omit}}]]}
 
         (perms [:root {:auth 1}
                 [:1
@@ -295,3 +295,20 @@
                 [:1#survey {:auth 1}]])
         =in=>
         {:node ^:in-any-order [[:1 {:spec-gen {:name "1" :surveyGroupType "SURVEY"}}]]}))))
+
+
+(comment
+
+  (def so-far (atom 0))
+  (while (let [x (dev/test)]
+           (and
+             (zero? (:fail x))
+             (zero? (:error x))
+             (> 3000 @so-far)))
+    (swap! so-far inc)
+    (comment (do
+              (doseq [m (reverse (ragtime.jdbc/load-resources "migrations"))]
+                (ragtime.core/rollback (ragtime.jdbc/sql-database (dev/local-db)) m))
+              (ragtime.core/migrate-all (ragtime.jdbc/sql-database (dev/local-db)) {} (ragtime.jdbc/load-resources "migrations")))))
+
+  )

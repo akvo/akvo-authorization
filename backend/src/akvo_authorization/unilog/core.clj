@@ -72,7 +72,8 @@
   (jdbc/with-db-transaction [tx db]
     (let [{:keys [id]} (upsert-role! tx user-role)]
       (delete-role-perms-for-role! tx {:id id})
-      (create-role-perms! tx {:permissions (map (fn [p] [id p]) permissions)})))
+      (when (seq permissions)
+        (create-role-perms! tx {:permissions (map (fn [p] [id p]) permissions)}))))
   :reprocess-queue)
 
 (defn upsert-user [db user]
