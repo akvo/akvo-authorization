@@ -9,7 +9,9 @@
             [reifyhealth.specmonstah.spec-gen :as sg]
             [akvo-authorization.unilog.spec :as unilog-spec]
             [testit.core :as it :refer [=in=> fact =>]]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.spec.gen.alpha :as gen]
+            [clojure.spec.alpha :as s]))
 
 (def ^:dynamic *test-run-id* 0)
 (defonce test-run-seq (atom 0))
@@ -169,6 +171,21 @@
                 :orgId (flow-instance-with-test-id flow-instance)
                 :entity {:id (:id entity)}}}]))
 
+(defn upsert-user [user]
+  (unilog/process (dev/local-db) [(->unilog
+                                    (flow-instance-with-test-id (:flow-instance user))
+                                    (rand-int 10000000)
+                                    [:user user])]))
+
+(defn create-admin [flow-instance user-id]
+  (let [user (merge
+               (gen/generate (s/gen ::unilog-spec/user))
+               {:emailAddress (email user-id)
+                :flow-instance flow-instance
+                :superAdmin true})]
+    (upsert-user user)
+    user))
+
 (deftest authz
   (testing "basic "
     (with-authz [:uat-instance {:auth 1}
@@ -194,6 +211,21 @@
                  [:folder-1.1.2 {:auth 1}
                   [:survey1#survey]]]]])
   (is (= #{[:uat-instance :survey1] [:prod-instance :survey1]} (can-see :user1))))
+
+(deftest admins
+  (with-authz [:uat-instance
+               [:folder-1
+                [:survey1#survey]]])
+  (with-authz [:prod-instance
+               [:folder-1
+                [:survey1#survey]]])
+  (create-admin :uat-instance :user1)
+  (create-admin :uat-instance :user2)
+  (let [prod-admin (create-admin :prod-instance :user2)]
+    (is (= #{[:uat-instance :survey1]} (can-see :user1)))
+    (is (= #{[:uat-instance :survey1] [:prod-instance :survey1]} (can-see :user2)))
+    (upsert-user (assoc prod-admin :superAdmin false))
+    (is (= #{[:uat-instance :survey1]} (can-see :user2)))))
 
 (deftest delete-user
   (let [entities (with-authz [:uat-instance {:auth 1}
@@ -244,7 +276,6 @@
                                 [:folder-1.1.1
                                  [:survey2#survey {:auth 1}]]]]])
         node (find-node entities :folder-1.1)]
-    (println "hi!!")
     (delete :node :uat-instance node)
     (is (= #{[:uat-instance :survey1]} (can-see :user1)))))
 
