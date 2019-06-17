@@ -1,5 +1,10 @@
 # akvo-authorization
 
+Before running docker-compose, export an env var that points to one of the unilog event databases in TEST:
+
+export UNILOG_DATABASE_URL=jdbc:postgresql://spicy-ugli...
+
+
 FIXME: description
 
 ## Developing
