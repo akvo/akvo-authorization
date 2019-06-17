@@ -82,17 +82,15 @@
       :process-later)))
 
 (defn upsert-role [db {:keys [permissions] :as user-role}]
-  (jdbc/with-db-transaction [tx db]
-    (let [{:keys [id]} (upsert-role! tx user-role)]
-      (delete-role-perms-for-role! tx {:id id})
-      (when (seq permissions)
-        (create-role-perms! tx {:permissions (map (fn [p] [id p]) permissions)}))))
+  (let [{:keys [id]} (upsert-role! db user-role)]
+    (delete-role-perms-for-role! db {:id id})
+    (when (seq permissions)
+      (create-role-perms! db {:permissions (map (fn [p] [id p]) permissions)})))
   :reprocess-queue)
 
 (defn upsert-user [db user]
-  (jdbc/with-db-transaction [tx db]
-    (let [{:keys [id]} (upsert-user! tx user)]
-      (upsert-user-flow-id! tx (assoc user :user-id id))))
+  (let [{:keys [id]} (upsert-user! db user)]
+    (upsert-user-flow-id! db (assoc user :user-id id)))
   :reprocess-queue)
 
 (defn should-process-later? [role-id user-id node-id flow-node-id]
@@ -191,28 +189,31 @@
                        :flow-id (-> msg :payload :entity :id)
                        :entity-type (-> msg :payload :eventType kind)}))))
 
+(defn remove-future-events-of-entity [messages stored-message]
+  (remove (fn [m]
+            (and
+              (= (:flow-instance m) (:flow-instance stored-message))
+              (= (:entity-type m) (:entity-type stored-message))
+              (= (:flow-id m) (:flow-instance m))))
+    messages))
+
 (defn process-message-batch* [db [stored-message & more] reprocess?]
   (if-not stored-message
     reprocess?
-    (case (process-single db (nippy/thaw (:message stored-message)))
-      :nothing (do
-                 (delete-message db stored-message)
-                 (recur db more reprocess?))
-      :process-later (recur db more reprocess?)
-      :delete-related (do
-                        (delete-messages-related! db stored-message)
-                        (recur
-                          db
-                          (remove (fn [m]
-                                    (and
-                                      (= (:flow-instance m) (:flow-instance stored-message))
-                                      (= (:entity-type m) (:entity-type stored-message))
-                                      (= (:flow-id m) (:flow-instance m))))
-                            more)
-                          reprocess?))
-      :reprocess-queue (do
-                         (delete-messages-related-before! db stored-message)
-                         (recur db more true)))))
+    (let [[more-result reprocess-result]
+          (jdbc/with-db-transaction [tx db]
+            (case (process-single tx (nippy/thaw (:message stored-message)))
+              :nothing (do
+                         (delete-message tx stored-message)
+                         [more reprocess?])
+              :process-later [more reprocess?]
+              :delete-related (do
+                                (delete-messages-related! tx stored-message)
+                                [(remove-future-events-of-entity more stored-message) reprocess?])
+              :reprocess-queue (do
+                                 (delete-messages-related-before! tx stored-message)
+                                 [more true])))]
+      (recur db more-result reprocess-result))))
 
 (defn process [db unilog-msgs]
   ;; TODO: assuming all messages are for the same flow-instance!!!!! Assert this.
