@@ -1,7 +1,6 @@
-(ns akvo-authorization.unilog.spec
+x(ns akvo-authorization.unilog.spec
   (:require [clojure.spec.alpha :as s]
-            [clojure.spec.gen.alpha :as gen]
-            [reifyhealth.specmonstah.spec-gen :as sg]))
+            [clojure.spec.gen.alpha :as gen]))
 
 (def id-seq (atom 1))
 (s/def ::id (s/with-gen integer? #(gen/fmap (fn [_] (swap! id-seq inc)) (gen/return nil))))
