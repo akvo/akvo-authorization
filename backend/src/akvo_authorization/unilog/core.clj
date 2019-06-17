@@ -39,9 +39,8 @@
 (def flow-root-id 0)
 
 (defn find-node-by-flow-id [db flow-instance flow-id]
-  (some->
-    (get-node-by-flow-id db {:flow-instance flow-instance
-                             :flow-id flow-id})))
+  (get-node-by-flow-id db {:flow-instance flow-instance
+                           :flow-id flow-id}))
 
 (defn insert-root-node [db flow-instance]
   (let [root-id (next-id db)]
@@ -61,11 +60,17 @@
 (defn add-child [parent-node child-id]
   (str (:full-path parent-node) "." child-id))
 
-(defn insert-node [db node parent]
-  (let [node-id (next-id db)]
-    (insert-node! db (assoc node
-                       :id node-id
-                       :full-path (->ltree (add-child parent node-id)))))
+(defn upsert-node [db {:keys [flow-instance flow-id flow-parent-id] :as node} parent]
+  (if-let [existing-node (find-node-by-flow-id db flow-instance flow-id)]
+    (let [new-full-path (->ltree (add-child parent (:id existing-node)))]
+      (update-node! db (assoc node :full-path new-full-path :id (:id existing-node)))
+      (when (not= (:flow-parent-id existing-node) flow-parent-id)
+        (update-all-childs-paths! db {:old-full-path (->ltree (:full-path existing-node))
+                                      :new-full-path new-full-path})))
+    (let [node-id (next-id db)]
+      (insert-node! db (assoc node
+                         :id node-id
+                         :full-path (->ltree (add-child parent node-id))))))
   :reprocess-queue)
 
 (defn upsert-role [db {:keys [permissions] :as user-role}]
@@ -135,10 +140,10 @@
                 (assoc :flow-instance flow-instance)
                 (update :flow-parent-id (fn [parent-id] (or parent-id 0))))]
         (if-let [parent (find-node-by-flow-id db flow-instance (:flow-parent-id e))]
-          (insert-node db e parent)
+          (upsert-node db e parent)
           (if (is-root-folder-in-flow (:flow-parent-id e))
             (let [new-instance-root (insert-root-node db flow-instance)]
-              (insert-node db e new-instance-root))
+              (upsert-node db e new-instance-root))
             :process-later)))
 
       ("userRoleCreated" "userRoleUpdated")

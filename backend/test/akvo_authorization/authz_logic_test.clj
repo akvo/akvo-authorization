@@ -171,19 +171,23 @@
                 :orgId (flow-instance-with-test-id flow-instance)
                 :entity {:id (:id entity)}}}]))
 
-(defn upsert-user [user]
+(defn upsert-entity [flow-instance [type entity :as type-entity-pair]]
   (unilog/process (dev/local-db) [(->unilog
-                                    (flow-instance-with-test-id (:flow-instance user))
+                                    (flow-instance-with-test-id flow-instance)
                                     (rand-int 10000000)
-                                    [:user user])]))
+                                    type-entity-pair)]))
+
+(defn move-node-under [entities flow-instance entity-to-move to-entity]
+  (let [node-to-move (find-node entities entity-to-move)
+        target-parent (find-node entities to-entity)]
+    (upsert-entity flow-instance [:node (assoc node-to-move :parentId (:id target-parent))])))
 
 (defn create-admin [flow-instance user-id]
   (let [user (merge
                (gen/generate (s/gen ::unilog-spec/user))
                {:emailAddress (email user-id)
-                :flow-instance flow-instance
                 :superAdmin true})]
-    (upsert-user user)
+    (upsert-entity flow-instance [:user user])
     user))
 
 (deftest authz
@@ -224,8 +228,28 @@
   (let [prod-admin (create-admin :prod-instance :user2)]
     (is (= #{[:uat-instance :survey1]} (can-see :user1)))
     (is (= #{[:uat-instance :survey1] [:prod-instance :survey1]} (can-see :user2)))
-    (upsert-user (assoc prod-admin :superAdmin false))
+    (upsert-entity :prod-instance [:user (assoc prod-admin :superAdmin false)])
     (is (= #{[:uat-instance :survey1]} (can-see :user2)))))
+
+
+(deftest moving-nodes
+  (let [entities (with-authz [:uat-instance {:auth 1}
+                              [:folder-1
+                               [:folder-1.1 {:auth 4}
+                                [:folder-1.1.1
+                                 [:survey1#survey {:auth 2}]]
+                                [:folder-1.1.2 {:auth 3}
+                                 [:survey2#survey]]]
+                               [:folder-1.2 {:auth 5}]]])]
+
+    (is (= #{} (can-see :user5)))
+    (is (= #{[:uat-instance :survey1]} (can-see :user2)))
+    (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user4)))
+    (move-node-under entities :uat-instance :folder-1.1.1 :folder-1.2)
+    (is (= #{[:uat-instance :survey1]} (can-see :user5)))
+    (is (= #{[:uat-instance :survey1]} (can-see :user2)))
+    (is (= #{[:uat-instance :survey2]} (can-see :user4)))
+    (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user1)))))
 
 (deftest delete-user
   (let [entities (with-authz [:uat-instance {:auth 1}
