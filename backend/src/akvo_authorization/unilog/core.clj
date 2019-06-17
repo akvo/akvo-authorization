@@ -55,8 +55,8 @@
                            :type "ROOT"})
     (find-node-by-flow-id db flow-instance flow-root-id)))
 
-(defn is-root-folder-in-flow [n]
-  (= flow-root-id (:flow-parent-id n)))
+(defn is-root-folder-in-flow [flow-id]
+  (= flow-root-id flow-id))
 
 (defn add-child [parent-node child-id]
   (str (:full-path parent-node) "." child-id))
@@ -86,7 +86,7 @@
   (or
     (nil? role-id)
     (nil? user-id)
-    (and (nil? node-id) (not (zero? flow-node-id)))))
+    (and (nil? node-id) (not (is-root-folder-in-flow flow-node-id)))))
 
 (defn upsert-user-auth [db {:keys [flow-instance flow-node-id flow-role-id flow-user-id flow-id]}]
   (let [{user-id :user-id} (get-user-by-flow-id db {:flow-instance flow-instance :flow-id flow-user-id})
@@ -136,7 +136,7 @@
                 (update :flow-parent-id (fn [parent-id] (or parent-id 0))))]
         (if-let [parent (find-node-by-flow-id db flow-instance (:flow-parent-id e))]
           (insert-node db e parent)
-          (if (is-root-folder-in-flow e)
+          (if (is-root-folder-in-flow (:flow-parent-id e))
             (let [new-instance-root (insert-root-node db flow-instance)]
               (insert-node db e new-instance-root))
             :process-later)))
