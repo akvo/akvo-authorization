@@ -73,6 +73,14 @@
                          :full-path (->ltree (add-child parent node-id))))))
   :reprocess-queue)
 
+(defn process-node-entity [db {:keys [flow-instance] :as gae-entity}]
+  (if-let [parent (find-node-by-flow-id db flow-instance (:flow-parent-id gae-entity))]
+    (upsert-node db gae-entity parent)
+    (if (is-root-folder-in-flow (:flow-parent-id gae-entity))
+      (let [new-instance-root (insert-root-node db flow-instance)]
+        (upsert-node db gae-entity new-instance-root))
+      :process-later)))
+
 (defn upsert-role [db {:keys [permissions] :as user-role}]
   (jdbc/with-db-transaction [tx db]
     (let [{:keys [id]} (upsert-role! tx user-role)]
@@ -127,67 +135,46 @@
 
 (defn process-single [db msg]
   (let [type (-> msg :payload :eventType)
-        e (-> msg :payload :entity)
-        flow-instance (-> msg :payload :orgId)]
+        flow-instance (-> msg :payload :orgId)
+        gae-entity (-> msg
+                     :payload
+                     :entity
+                     (rename-keys {:id :flow-id})
+                     (assoc :flow-instance flow-instance))]
     (case type
       ("surveyGroupCreated" "surveyGroupUpdated")
-      (let [e (-> e
-                (select-keys [:id :name :public :surveyGroupType :parentId])
-                (rename-keys {:public :is-public
-                              :surveyGroupType :type
-                              :id :flow-id
-                              :parentId :flow-parent-id})
-                (assoc :flow-instance flow-instance)
-                (update :flow-parent-id (fn [parent-id] (or parent-id 0))))]
-        (if-let [parent (find-node-by-flow-id db flow-instance (:flow-parent-id e))]
-          (upsert-node db e parent)
-          (if (is-root-folder-in-flow (:flow-parent-id e))
-            (let [new-instance-root (insert-root-node db flow-instance)]
-              (upsert-node db e new-instance-root))
-            :process-later)))
+      (process-node-entity db (-> gae-entity
+                                (rename-keys {:public :is-public
+                                              :surveyGroupType :type
+                                              :parentId :flow-parent-id})
+                                (update :flow-parent-id (fn [parent-id] (or parent-id 0)))))
 
       ("userRoleCreated" "userRoleUpdated")
-      (upsert-role db (-> e
-                        (select-keys [:id :name :permissions])
-                        (rename-keys {:id :flow-id})
-                        (assoc :flow-instance flow-instance)))
+      (upsert-role db gae-entity)
 
       ("userCreated" "userUpdated")
-      (upsert-user db (-> e
-                        (rename-keys {:id :flow-id
-                                      :emailAddress :email
+      (upsert-user db (-> gae-entity
+                        (rename-keys {:emailAddress :email
                                       :permissionList :permission-list
-                                      :superAdmin :super-admin})
-                        (assoc :flow-instance flow-instance)))
+                                      :superAdmin :super-admin})))
 
       ("userAuthorizationCreated" "userAuthorizationUpdated")
-      (upsert-user-auth db (-> e
-                             (rename-keys {:id :flow-id
-                                           :roleId :flow-role-id
+      (upsert-user-auth db (-> gae-entity
+                             (rename-keys {:roleId :flow-role-id
                                            :userId :flow-user-id
-                                           :securedObjectId :flow-node-id})
-                             (assoc :flow-instance flow-instance)))
+                                           :securedObjectId :flow-node-id})))
 
       "userDeleted"
-      (delete-user db (-> e
-                        (rename-keys {:id :flow-id})
-                        (assoc :flow-instance flow-instance)))
+      (delete-user db gae-entity)
 
       "userAuthorizationDeleted"
-      (delete-user-auth db (-> e
-                             (rename-keys {:id :flow-id})
-                             (assoc :flow-instance flow-instance)))
+      (delete-user-auth db gae-entity)
 
       "userRoleDeleted"
-      (delete-role db (-> e
-                        (rename-keys {:id :flow-id})
-                        (assoc :flow-instance flow-instance)))
+      (delete-role db gae-entity)
 
       "surveyGroupDeleted"
-      (delete-node db (-> e
-                        (rename-keys {:id :flow-id})
-                        (assoc :flow-instance flow-instance)))
-      )))
+      (delete-node db gae-entity))))
 
 (defn kind [event-type]
   ;; Probably we should use the type in the entity, but that would mean generating the proper
