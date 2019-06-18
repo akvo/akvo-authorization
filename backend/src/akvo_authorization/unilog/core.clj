@@ -220,8 +220,13 @@
                                  [more true])))]
       (recur db more-result reprocess-result))))
 
+(defn assert-all-from-same-flow-instance [unilog-msgs]
+  (assert
+    (= 1 (count (distinct (map #(-> % :payload :orgId) unilog-msgs))))
+    "All unilog messages should be from the same flow instance"))
+
 (defn process [db unilog-msgs]
-  ;; TODO: assuming all messages are for the same flow-instance!!!!! Assert this.
+  (assert-all-from-same-flow-instance unilog-msgs)
   (let [stored-messages (store-messages! db unilog-msgs)]
     (loop [batch-number 0
            batch stored-messages]
