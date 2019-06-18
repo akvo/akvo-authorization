@@ -44,9 +44,9 @@
 (s/def ::surveyGroup
   (s/keys
     :req-un
-    [::id ::name ::public ::surveyGroupType]
+    [::id ::name ::public ::surveyGroupType ::parentId]
     :opt-un
-    [::description ::parentId]))
+    [::description]))
 
 (s/def ::delete
   (s/keys :req-un [::id]))
