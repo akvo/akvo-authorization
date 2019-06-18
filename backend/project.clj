@@ -20,8 +20,8 @@
   :prep-tasks     ["javac" "compile" ["run" ":duct/compiler"]]
   :middleware     [lein-duct.plugin/middleware]
   :profiles
-  {:dev  [:project/dev :profiles/dev]
-   :repl {:prep-tasks   ^:replace ["javac" "compile"]
+  {:dev [:project/dev :profiles/dev]
+   :repl {:prep-tasks ^:replace ["javac" "compile"]
           :repl-options {:init-ns dev
                          :init (do
                                  (println "Starting BackEnd ...")
@@ -30,10 +30,16 @@
                          :port 47480}}
    :uberjar {:aot :all}
    :profiles/dev {}
-   :project/dev  {:source-paths   ["dev/src"]
-                  :resource-paths ["dev/resources"]
-                  :dependencies   [[integrant/repl "0.3.1"]
-                                   [eftest "0.5.7"]
-                                   [metosin/testit "0.3.0"]
-                                   [spec-provider "0.4.14"]
-                                   [kerodon "0.9.0"]]}})
+   :project/dev {:source-paths ["dev/src"]
+                 :resource-paths ["dev/resources"]
+                 :dependencies [[integrant/repl "0.3.1"]
+                                [eftest "0.5.7"]
+                                [metosin/testit "0.3.0"]
+                                [spec-provider "0.4.14"]
+                                [kerodon "0.9.0"]
+                                [org.akvo.flow/akvo-flow "v1.9.43-5-gff7e9ea" :classifier "classes"
+                                 :exclusions [[commons-fileupload]]]
+                                [com.google.appengine/appengine-tools-sdk "1.9.50"]
+                                [com.google.appengine/appengine-remote-api "1.9.50"]
+                                [com.google.appengine/appengine-api-1.0-sdk "1.9.50"]
+                                [com.google.appengine/appengine-jsr107cache "1.9.50"]]}})

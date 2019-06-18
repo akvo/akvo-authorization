@@ -16,6 +16,7 @@ services:
       - ./backend:/app
       - ~/.m2:/root/.m2
       - ~/.lein:/root/.lein
+      #- ../akvo-flow-server-config/:/akvo-flow-server-config
       - pg-data:/pg-certs:ro
     environment:
       - PGSSLROOTCERT=/pg-certs/server.crt
