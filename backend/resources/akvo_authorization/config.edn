@@ -19,9 +19,23 @@
                                                   :maximum-pool-size 2
                                                   :jdbc-url #duct/env "UNILOG_DATABASE_URL"}
 
+  [:duct.database.sql/hikaricp :authz/unilog-consumer-db] {:idle-timeout 300000
+                                                           :minimum-idle 5
+                                                           :maximum-pool-size 5
+                                                           :jdbc-url #duct/env "AUTHZ_DATABASE_URL"}
+
   :akvo-authorization.handler.monitoring/collector {}
   :akvo-authorization.handler.monitoring/middleware {:collector #ig/ref :akvo-authorization.handler.monitoring/collector}
 
+  :akvo-authorization.unilog.consumer/start-cron
+  {:metrics-collector #ig/ref :akvo-authorization.handler.monitoring/collector
+   :authz-db #ig/ref :authz/unilog-consumer-db
+   :unilog-db {:event-log-password #duct/env "UNILOG_DATABASE_PASSWORD"
+               :event-log-port 5432
+               :event-log-user #duct/env "UNILOG_DATABASE_USER"
+               :event-log-server #duct/env "UNILOG_DATABASE_HOST"
+               :prefix "u_"
+               :db-name #duct/env "UNILOG_DATABASE_NAME"}}
   :duct.handler/root
   {:middleware ^:distinct [#ig/ref :akvo-authorization.handler.monitoring/middleware]}
   }
