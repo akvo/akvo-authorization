@@ -14,6 +14,7 @@
                  [hugsql-adapter-case "0.1.0"]
                  [com.taoensso/nippy "2.14.0"]
                  [com.layerware/hugsql "0.4.9"]
+                 [com.climate/claypoole "1.1.4"]
 
                  [iapetos "0.1.8"]
                  [io.prometheus/simpleclient_hotspot "0.6.0"]

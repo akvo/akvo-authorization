@@ -28,7 +28,8 @@
   :akvo-authorization.handler.monitoring/middleware {:collector #ig/ref :akvo-authorization.handler.monitoring/collector}
 
   :akvo-authorization.unilog.consumer/start-cron
-  {:metrics-collector #ig/ref :akvo-authorization.handler.monitoring/collector
+  {:parallelism 5                                           ;; Probably should be the same as the unilog-consumer-db thread pool size
+   :metrics-collector #ig/ref :akvo-authorization.handler.monitoring/collector
    :authz-db #ig/ref :authz/unilog-consumer-db
    :unilog-db {:event-log-password #duct/env "UNILOG_DATABASE_PASSWORD"
                :event-log-port 5432

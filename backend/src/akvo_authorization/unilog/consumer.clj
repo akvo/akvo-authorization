@@ -6,6 +6,7 @@
             [akvo-authorization.unilog.core]
             [jsonista.core :as json]
             [clojure.spec.alpha :as s]
+            [com.climate.claypoole :as cp]
             [hugsql.core :as hugsql]
             [hugsql-adapter-case.adapters :as adapter-case]
             [iapetos.core :as prometheus]))
@@ -86,22 +87,29 @@
         ["SELECT id, payload::text FROM event_log WHERE id > ? ORDER BY id ASC " offset]
         {:auto-commit? false :fetch-size 1000}))))
 
-(defn process-unilog-queue [{:keys [unilog-db metrics-collector] :as config}]
+(defn process-unilog-queue [{:keys [unilog-db metrics-collector thread-pool] :as config}]
   (prometheus/with-duration (metrics-collector :event/all-tenants-duration)
-    (dorun (pmap
+    (dorun (cp/pmap thread-pool
              (fn [db-name]
                (prometheus/with-duration (metrics-collector :event/tenant-duration {:db-name db-name})
                  (process-unilog-queue-for-tenant config db-name)))
              (unilog-dbs (event-log-spec unilog-db) (:prefix unilog-db))))))
 
-(defmethod ig/init-key ::start-cron [_ {:keys [authz-db unilog-db metrics-collector] :as k}]
+(defmethod ig/init-key ::start-cron [_ {:keys [authz-db unilog-db metrics-collector parallelism] :as config}]
   (assert authz-db)
   (assert unilog-db)
   (assert metrics-collector)
-  (update k
-    :authz-db :spec))
+  (assert parallelism)
+
+  (-> config
+    (update :authz-db :spec)
+    (assoc :thread-pool (cp/threadpool parallelism :name "unilog-consumer"))))
+
+
+(defmethod ig/halt-key! ::start-cron [_ {:keys [thread-pool]}]
+  (when thread-pool
+    (cp/shutdown! thread-pool)))
 
 (comment
   (process-unilog-queue (get integrant.repl.state/system :akvo-authorization.unilog.consumer/start-cron))
-
   )
