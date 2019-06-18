@@ -251,6 +251,18 @@
     (is (= #{[:uat-instance :survey2]} (can-see :user4)))
     (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user1)))))
 
+(deftest changing-email
+  (let [entities (with-authz [:uat-instance
+                              [:folder-1
+                               [:folder-1.1 {:auth 1}
+                                [:folder-1.1.1
+                                 [:survey1#survey]]]]])
+        user (find-user entities :user1)]
+    (is (= #{[:uat-instance :survey1]} (can-see :user1)))
+    (upsert-entity :uat-instance [:user (assoc user :emailAddress (email :new-email))])
+    (is (= #{} (can-see :user1)))
+    (is (= #{[:uat-instance :survey1]} (can-see :new-email)))))
+
 (deftest delete-user
   (let [entities (with-authz [:uat-instance {:auth 1}
                               [:survey1#survey]])

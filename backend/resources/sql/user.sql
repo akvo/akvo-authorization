@@ -48,6 +48,12 @@ DO
         role_id = :role-id
 RETURNING *
 
+-- :name change-auths-owner! :!
+UPDATE user_node_role
+SET user_id = :new-user-id
+WHERE user_id = :previous-user-id
+    AND flow_instance = :flow-instance
+
 -- :name delete-user-auth! :!
 DELETE from user_node_role
 WHERE user_id = :user-id

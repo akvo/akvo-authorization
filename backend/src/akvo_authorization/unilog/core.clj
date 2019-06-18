@@ -89,8 +89,13 @@
   :reprocess-queue)
 
 (defn upsert-user [db user]
-  (let [{:keys [id]} (upsert-user! db user)]
-    (upsert-user-flow-id! db (assoc user :user-id id)))
+  (let [{:keys [id]} (upsert-user! db user)
+        previous-user-flow (get-user-by-flow-id db user)]
+    (upsert-user-flow-id! db (assoc user :user-id id))
+    (when (and previous-user-flow (not= (:email previous-user-flow) (:email user)))
+      (change-auths-owner! db {:previous-user-id (:user-id previous-user-flow)
+                               :new-user-id id
+                               :flow-instance (:flow-instance user)})))
   :reprocess-queue)
 
 (defn should-process-later? [role-id user-id node-id flow-node-id]
