@@ -9,6 +9,7 @@
             [com.climate.claypoole :as cp]
             [hugsql.core :as hugsql]
             [hugsql-adapter-case.adapters :as adapter-case]
+            [taoensso.timbre :as timbre]
             [iapetos.core :as prometheus])
   (:import (java.util.concurrent Executors TimeUnit)))
 
@@ -21,6 +22,7 @@
               (config :event-log-server)
               (config :event-log-port)
               (config :db-name))
+   :ssl true
    :user (config :event-log-user)
    :password (config :event-log-password)})
 
@@ -88,18 +90,25 @@
         ["SELECT id, payload::text FROM event_log WHERE id > ? ORDER BY id ASC " offset]
         {:auto-commit? false :fetch-size 1000}))))
 
-(defn process-unilog-queue [{:keys [unilog-db metrics-collector thread-pool] :as config}]
-  (prometheus/with-duration (metrics-collector :event/all-tenants-duration)
-    (prometheus/with-timestamps {:last-run (metrics-collector :event/last-run)
-                                 :last-success (metrics-collector :event/last-success)
-                                 :last-failure (metrics-collector :event/last-failure)}
-      (prometheus/set metrics-collector :event/last-start (System/currentTimeMillis))
-      (dorun
-        (cp/pmap thread-pool
-          (fn [db-name]
-            (prometheus/with-duration (metrics-collector :event/tenant-duration {:db-name db-name})
-              (process-unilog-queue-for-tenant config db-name)))
-          (unilog-dbs (event-log-spec unilog-db) (:prefix unilog-db)))))))
+(defmacro log-and-ignore-error [metrics-collector db-name & body]
+  `(try
+     (let [metrics-labels# {:db-name ~db-name}]
+       (prometheus/with-duration (~metrics-collector :event/tenant-duration metrics-labels#)
+         (prometheus/with-timestamps {:last-run (~metrics-collector :event/last-run metrics-labels#)
+                                      :last-success (~metrics-collector :event/last-success metrics-labels#)
+                                      :last-failure (~metrics-collector :event/last-failure metrics-labels#)}
+           (prometheus/set ~metrics-collector :event/last-start metrics-labels# (System/currentTimeMillis))
+           ~@body)))
+     (catch Throwable t#
+       (timbre/error t#))))
+
+(defn process-unilog-queue [{:keys [unilog-db thread-pool metrics-collector] :as config}]
+  (dorun
+    (cp/pmap thread-pool
+      (fn [db-name]
+        (log-and-ignore-error metrics-collector db-name
+          (process-unilog-queue-for-tenant config db-name)))
+      (unilog-dbs (event-log-spec unilog-db) (:prefix unilog-db)))))
 
 (defmethod ig/init-key ::start-cron [_ {:keys [authz-db unilog-db metrics-collector parallelism] :as config}]
   (assert authz-db)
@@ -111,7 +120,9 @@
                      (assoc :thread-pool (cp/threadpool parallelism :name "unilog-consumer")))
         cron-thread (Executors/newScheduledThreadPool 1)
         cron-task (.scheduleWithFixedDelay cron-thread
-                    (fn [] (process-unilog-queue tmp-config)) 0 2 TimeUnit/SECONDS)]
+                    (fn []
+                      (log-and-ignore-error metrics-collector "global"
+                        (process-unilog-queue tmp-config))) 0 2 TimeUnit/SECONDS)]
     (-> tmp-config
       (assoc
         :cron-task cron-task
