@@ -21,6 +21,10 @@ services:
     environment:
       - PGSSLROOTCERT=/pg-certs/server.crt
       - UNILOG_DATABASE_URL
+      - UNILOG_DATABASE_NAME=u_unilog_events
+      - UNILOG_DATABASE_HOST=postgres
+      - UNILOG_DATABASE_USER=uniloguser
+      - UNILOG_DATABASE_PASSWORD=uniloguserpassword
       - AUTHZ_DATABASE_URL=jdbc:postgresql://postgres/authzdb?user=authzuser&password=authzpasswd&ssl=true
     ports:
       - "47480:47480"
