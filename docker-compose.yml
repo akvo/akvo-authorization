@@ -20,7 +20,6 @@ services:
       - pg-data:/pg-certs:ro
     environment:
       - PGSSLROOTCERT=/pg-certs/server.crt
-      - UNILOG_DATABASE_URL
       - UNILOG_DATABASE_NAME=u_unilog_events
       - UNILOG_DATABASE_HOST=postgres
       - UNILOG_DATABASE_USER=uniloguser

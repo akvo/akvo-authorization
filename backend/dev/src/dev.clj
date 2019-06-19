@@ -29,9 +29,6 @@
 
 (integrant.repl/set-prep! #(duct/prep-config (read-config) profiles))
 
-(defn unilog-db []
-  (:spec (get integrant.repl.state/system [:duct.database.sql/hikaricp :authz/unilog-db])))
-
 (defn local-db []
   (:spec (get integrant.repl.state/system [:duct.database.sql/hikaricp :authz/authz-db])))
 

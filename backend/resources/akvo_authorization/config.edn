@@ -14,11 +14,6 @@
                                                  :maximum-pool-size 5
                                                  :jdbc-url #duct/env "AUTHZ_DATABASE_URL"}
 
-  [:duct.database.sql/hikaricp :authz/unilog-db] {:idle-timeout 300000
-                                                  :minimum-idle 2
-                                                  :maximum-pool-size 2
-                                                  :jdbc-url #duct/env "UNILOG_DATABASE_URL"}
-
   [:duct.database.sql/hikaricp :authz/unilog-consumer-db] {:idle-timeout 300000
                                                            :minimum-idle 5
                                                            :maximum-pool-size 5
