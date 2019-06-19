@@ -29,6 +29,10 @@
         :event/all-tenants-duration
         {:description "Time taken to process all tenants"
          :buckets [1, 3, 5, 10, 60, 300, (* 30 60), (* 60 60)]})
+      (prometheus/gauge :event/last-run {:description "Timestamp of last unilog consumer run"})
+      (prometheus/gauge :event/last-success {:description "Timestamp of last unilog consumer run without exceptions"})
+      (prometheus/gauge :event/last-failure {:description "Timestamp of last unilog consumer run and fail"})
+      (prometheus/gauge :event/last-start {:description "Timestamp of last unilog consumer run start time"})
       (prometheus/histogram
         :event/tenant-duration
         {:description "Time taken to process a tenant"

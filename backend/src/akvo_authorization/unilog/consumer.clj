@@ -9,7 +9,8 @@
             [com.climate.claypoole :as cp]
             [hugsql.core :as hugsql]
             [hugsql-adapter-case.adapters :as adapter-case]
-            [iapetos.core :as prometheus]))
+            [iapetos.core :as prometheus])
+  (:import (java.util.concurrent Executors TimeUnit)))
 
 (hugsql/def-db-fns "sql/offsets.sql" {:adapter (adapter-case/kebab-adapter)})
 
@@ -89,26 +90,41 @@
 
 (defn process-unilog-queue [{:keys [unilog-db metrics-collector thread-pool] :as config}]
   (prometheus/with-duration (metrics-collector :event/all-tenants-duration)
-    (dorun (cp/pmap thread-pool
-             (fn [db-name]
-               (prometheus/with-duration (metrics-collector :event/tenant-duration {:db-name db-name})
-                 (process-unilog-queue-for-tenant config db-name)))
-             (unilog-dbs (event-log-spec unilog-db) (:prefix unilog-db))))))
+    (prometheus/with-timestamps {:last-run (metrics-collector :event/last-run)
+                                 :last-success (metrics-collector :event/last-success)
+                                 :last-failure (metrics-collector :event/last-failure)}
+      (prometheus/set metrics-collector :event/last-start (System/currentTimeMillis))
+      (dorun
+        (cp/pmap thread-pool
+          (fn [db-name]
+            (prometheus/with-duration (metrics-collector :event/tenant-duration {:db-name db-name})
+              (process-unilog-queue-for-tenant config db-name)))
+          (unilog-dbs (event-log-spec unilog-db) (:prefix unilog-db)))))))
 
 (defmethod ig/init-key ::start-cron [_ {:keys [authz-db unilog-db metrics-collector parallelism] :as config}]
   (assert authz-db)
   (assert unilog-db)
   (assert metrics-collector)
   (assert parallelism)
+  (let [tmp-config (-> config
+                     (update :authz-db :spec)
+                     (assoc :thread-pool (cp/threadpool parallelism :name "unilog-consumer")))
+        cron-thread (Executors/newScheduledThreadPool 1)
+        cron-task (.scheduleWithFixedDelay cron-thread
+                    (fn [] (process-unilog-queue tmp-config)) 0 2 TimeUnit/SECONDS)]
+    (-> tmp-config
+      (assoc
+        :cron-task cron-task
+        :cron-thread cron-thread))))
 
-  (-> config
-    (update :authz-db :spec)
-    (assoc :thread-pool (cp/threadpool parallelism :name "unilog-consumer"))))
 
-
-(defmethod ig/halt-key! ::start-cron [_ {:keys [thread-pool]}]
+(defmethod ig/halt-key! ::start-cron [_ {:keys [thread-pool cron-thread cron-task]}]
   (when thread-pool
-    (cp/shutdown! thread-pool)))
+    (cp/shutdown! thread-pool))
+  (when cron-task
+    (.cancel cron-task true))
+  (when cron-thread
+    (.shutdownNow cron-thread)))
 
 (comment
   (process-unilog-queue (get integrant.repl.state/system :akvo-authorization.unilog.consumer/start-cron))
