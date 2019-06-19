@@ -25,14 +25,14 @@
                                         :labels [:flow-instance]})
       (prometheus/gauge :event/queued-up {:description "Total number of events queued locally, waiting for some other entity to show up"
                                           :labels [:flow-instance]})
-      (prometheus/histogram
-        :event/all-tenants-duration
-        {:description "Time taken to process all tenants"
-         :buckets [1, 3, 5, 10, 60, 300, (* 30 60), (* 60 60)]})
-      (prometheus/gauge :event/last-run {:description "Timestamp of last unilog consumer run"})
-      (prometheus/gauge :event/last-success {:description "Timestamp of last unilog consumer run without exceptions"})
-      (prometheus/gauge :event/last-failure {:description "Timestamp of last unilog consumer run and fail"})
-      (prometheus/gauge :event/last-start {:description "Timestamp of last unilog consumer run start time"})
+      (prometheus/gauge :event/last-run {:description "Timestamp of last unilog consumer run"
+                                         :labels [:db-name]})
+      (prometheus/gauge :event/last-success {:description "Timestamp of last unilog consumer run without exceptions"
+                                             :labels [:db-name]})
+      (prometheus/gauge :event/last-failure {:description "Timestamp of last unilog consumer run and fail"
+                                             :labels [:db-name]})
+      (prometheus/gauge :event/last-start {:description "Timestamp of last unilog consumer run start time"
+                                           :labels [:db-name]})
       (prometheus/histogram
         :event/tenant-duration
         {:description "Time taken to process a tenant"
