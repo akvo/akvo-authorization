@@ -1,0 +1,24 @@
+language: bash
+
+sudo: required
+services:
+- docker
+cache:
+  directories:
+  - "${HOME}/.cache"
+  - "${HOME}/.m2"
+  - "${HOME}/google-cloud-sdk"
+before_install:
+- if [[ ! -f "${HOME}/google-cloud-sdk/bin/gcloud" ]]; then rm -rf "${HOME}/google-cloud-sdk";
+  curl https://sdk.cloud.google.com | bash > /dev/null; fi
+script:
+- "./ci/build.sh"
+after_failure:
+- docker-compose -p akvo-authz-ci -f docker-compose.yml -f docker-compose.ci.yml
+  logs
+env:
+  global:
+  - PATH=${HOME}/google-cloud-sdk/bin:$PATH
+  - CLOUDSDK_CORE_DISABLE_PROMPTS=1
+before_cache:
+  - find $HOME/.m2 -name resolver-status.properties -exec rm -f {} \;
