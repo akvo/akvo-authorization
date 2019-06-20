@@ -18,7 +18,7 @@
 
 (defn wipe-db [f]
   (jdbc/delete! unilog-db "event_log" nil)
-  (f))
+  (tu/check-servers-are-up f))
 
 (use-fixtures :each tu/unique-run-number)
 (use-fixtures :once wipe-db)
@@ -37,7 +37,7 @@
         (jdbc/insert! unilog-db "event_log" {:payload (-> message :payload jsonb)})))))
 
 (defn check-perms [user surveys]
-  (-> (http/post "http://localhost:3000/check_permissions"
+  (-> (http/post "http://authz:3000/check_permissions"
         {:as :json
          :headers {"x-akvo-email" user}
          :form-params surveys
@@ -47,7 +47,7 @@
 
 (defn get-valid-event-stat []
   (let [stats (->>
-                (http/get "http://localhost:3000/metrics")
+                (http/get "http://authz:3000/metrics")
                 :body
                 (str/split-lines)
                 (filter (fn [x] (str/starts-with? x "event_valid{db_name=\"u_unilog_events")))
@@ -73,4 +73,4 @@
       (is (= (get-valid-event-stat) (+ valid-events-stat-before (count entities)))))))
 
 (deftest health-check
-  (is (= 200 (:status (http/get "http://localhost:3000/healthz"))) ))
+  (is (= 200 (:status (http/get "http://authz:3000/healthz"))) ))

@@ -1,14 +1,27 @@
 version: "3"
 services:
-  postgres:
-    build: postgres
-    environment:
-    - POSTGRES_PASSWORD=akvo
-    volumes:
-    - pg-data:/var/lib/postgresql/data
+
   authz:
+    environment:
+      - WAIT_FOR_DEPS=true
+      - NREPL_BIND_HOST=0.0.0.0
+    ports:
+      - "47889:47889"
     volumes:
+      - ./backend/dev:/app/dev
+#      - ./dev/dev-config.edn:/etc/config/akvo-unilog/config.edn
+    image: "eu.gcr.io/${PROJECT_NAME}/akvo-authz:$TRAVIS_COMMIT"
+
+  tests:
+    image: akvo-authz-dev:develop
+    volumes:
+      - ./backend:/app
+      - ~/.m2:/root/.m2
+      - ~/.lein:/root/.lein
       - pg-data:/pg-certs:ro
+    depends_on:
+      - authz
+    command: "true"
     environment:
       - PGSSLROOTCERT=/pg-certs/server.crt
       - UNILOG_DATABASE_NAME=u_unilog_events
@@ -16,5 +29,3 @@ services:
       - UNILOG_DATABASE_USER=uniloguser
       - UNILOG_DATABASE_PASSWORD=uniloguserpassword
       - AUTHZ_DATABASE_URL=jdbc:postgresql://postgres/authzdb?user=authzuser&password=authzpasswd&ssl=true
-volumes:
-  pg-data:

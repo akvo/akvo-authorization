@@ -46,4 +46,4 @@
      (ring/wrap-metrics collector)))
 
 (comment
-  (slurp "http://localhost:3000/metrics"))
+  (slurp "http://authz:3000/metrics"))

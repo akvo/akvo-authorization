@@ -12,19 +12,20 @@
             [clojure.spec.alpha :as s]))
 
 (use-fixtures :each tu/unique-run-number)
+(use-fixtures :once tu/check-servers-are-up)
 
 (defn add-authz [auth-tree]
-  (tu/unilog-messages auth-tree (partial unilog/process (dev/local-db))))
+  (tu/unilog-messages auth-tree (partial unilog/process tu/local-db)))
 
 (defn can-see [user]
-  (let [surveys (authz/find-all-surveys (dev/local-db) (tu/email user))
+  (let [surveys (authz/find-all-surveys tu/local-db (tu/email user))
         instance-name-pairs (map (juxt
                                    (comp keyword tu/remove-test-run-id :flow-instance)
                                    (comp keyword :name)) surveys)]
     (set instance-name-pairs)))
 
 (defn delete [type flow-instance entity]
-  (unilog/process (dev/local-db)
+  (unilog/process tu/local-db
     [{:id (rand-int 100000)
       :payload {:eventType (case type
                              :user "userDeleted"
@@ -35,7 +36,7 @@
                 :entity {:id (:id entity)}}}]))
 
 (defn upsert-entity [flow-instance [type entity :as type-entity-pair]]
-  (unilog/process (dev/local-db) [(tu/->unilog
+  (unilog/process tu/local-db [(tu/->unilog
                                     (tu/flow-instance-with-test-id flow-instance)
                                     (rand-int 10000000)
                                     type-entity-pair)]))

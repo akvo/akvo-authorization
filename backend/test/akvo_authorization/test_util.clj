@@ -1,18 +1,27 @@
 (ns akvo-authorization.test-util
   (:require [clojure.test :refer :all]
             [akvo-authorization.unilog.message-processor :as unilog]
-            dev
             [reifyhealth.specmonstah.core :as sm]
             [reifyhealth.specmonstah.spec-gen :as sg]
             [akvo-authorization.unilog.spec :as unilog-spec]
+            hikari-cp.core
             [testit.core :as it :refer [=in=> fact =>]]
-            [clojure.string :as str]))
+            [clojure.string :as str])
+  (:import (java.net Socket)))
+
+(defonce local-db {:datasource (hikari-cp.core/make-datasource {:minimum-idle 0
+                                                                :maximum-pool-size 30
+                                                                :connection-timeout 30000
+                                                                :validation-timeout 5000
+                                                                :idle-timeout 30000
+                                                                :max-lifetime 10000
+                                                                :jdbc-url (System/getenv "AUTHZ_DATABASE_URL")})})
 
 (def ^:dynamic *test-run-id* 0)
 
 (defn unique-run-number
   [f]
-  (binding [*test-run-id* (+ 10 (unilog/next-id (dev/local-db)))]
+  (binding [*test-run-id* (+ 10 (unilog/next-id local-db))]
     (f)))
 
 (def schema
@@ -178,6 +187,29 @@
         =in=>
         {:node ^:in-any-order [[:1 {:spec-gen {:name "1" :surveyGroupType "SURVEY"}}]]}))))
 
+(defmacro try-for [msg how-long & body]
+  `(let [start-time# (System/currentTimeMillis)]
+     (loop []
+       (let [[status# return#] (try
+                                 (let [result# (do ~@body)]
+                                   [(if result# ::ok ::fail) result#])
+                                 (catch Throwable e# [::error e#]))
+             more-time# (> (* ~how-long 1000)
+                          (- (System/currentTimeMillis) start-time#))]
+         (cond
+           (= status# ::ok) return#
+           more-time# (do (Thread/sleep 1000) (recur))
+           (= status# ::fail) (throw (ex-info (str "Failed: " ~msg) {:last-result return#}))
+           (= status# ::error) (throw (RuntimeException. (str "Failed: " ~msg) return#)))))))
+
+(defn wait-for-server [host port]
+  (try-for (str "Nobody listening at " host ":" port) 60
+    (with-open [_ (Socket. host (int port))]
+      true)))
+
+(defn check-servers-are-up [f]
+  (wait-for-server "authz" 3000)
+  (f))
 
 (comment
 
