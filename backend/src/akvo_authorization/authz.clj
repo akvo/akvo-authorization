@@ -16,11 +16,19 @@
     (get-all-surveys-for-user db {:user-id user-id})))
 
 (defn filter-surveys [allowed-surveys queried-surveys]
-  (let [allowed (into #{} (map (juxt :flow-instance (comp str :flow-id))) allowed-surveys)]
-    (filter
-      (fn [{:keys [instance_id survey_id]}]
-        (allowed [instance_id survey_id]))
-      queried-surveys)))
+  (let [queried (reduce
+                  (fn [so-far {:keys [instance_id survey_id] :as queried-survey}]
+                    (assoc so-far
+                      [instance_id (Long/parseLong survey_id)]
+                      queried-survey))
+                  {}
+                  queried-surveys)]
+    (reduce (fn [so-far {:keys [flow-instance flow-id]}]
+              (if-let [found (get queried [flow-instance flow-id])]
+                (conj so-far found)
+                so-far))
+      []
+      allowed-surveys)))
 
 (s/def ::instance_id ::unilog-spec/orgId)
 (s/def ::positive-integer-string (s/and string? #(re-matches #"[0-9]+" %)))
