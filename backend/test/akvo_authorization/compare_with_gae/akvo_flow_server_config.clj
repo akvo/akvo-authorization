@@ -1,4 +1,4 @@
-(ns akvo-authorization.akvo-flow-server-config
+(ns akvo-authorization.compare-with-gae.akvo-flow-server-config
   (:import [com.google.apphosting.utils.config AppEngineWebXmlReader]
            (com.google.appengine.tools.remoteapi RemoteApiOptions RemoteApiInstaller))
   (:require

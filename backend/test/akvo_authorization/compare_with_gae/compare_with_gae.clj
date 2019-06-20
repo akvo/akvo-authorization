@@ -1,4 +1,4 @@
-(ns akvo-authorization.compare-with-gae
+(ns akvo-authorization.compare-with-gae.compare-with-gae
   (:require [clojure.test :refer :all]
             [akvo-authorization.akvo-flow-server-config :as gae])
   (:import (com.gallatinsystems.survey.dao SurveyDAO SurveyGroupDAO)
