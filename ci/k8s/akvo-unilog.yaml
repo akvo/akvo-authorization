@@ -83,19 +83,60 @@ spec:
             path: /healthz
             port: 3000
           initialDelaySeconds: 90
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: akvo-authz
-  namespace: default
-  labels:
-    run: akvo-authz
-spec:
-  type: NodePort
-  ports:
-  - port: 3000
-    targetPort: 3000
-  selector:
-    run: akvo-authz
+      - name: akvo-authz-proxy
+        image: eu.gcr.io/akvo-lumen/akvo-authz-nginx:$TRAVIS_COMMIT
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8081
+        volumeMounts:
+          - name: secrets
+            mountPath: /secrets
+            readOnly: true
+        resources:
+          requests:
+            cpu: ${PROXY_POD_CPU_REQUESTS}
+            memory: ${PROXY_POD_MEM_REQUESTS}
+          limits:
+            cpu: ${PROXY_POD_CPU_LIMITS}
+            memory: ${PROXY_POD_MEM_LIMITS}
+        env:
+          - name: SECRETS_MOUNT_PATH
+            value: "/secrets"
+          - name: AUTHZ_API_BACKEND_URL
+            value: "http://localhost:3000"
+          - name: TOKEN_INTROSPECTION_URL
+            valueFrom:
+              configMapKeyRef:
+                name: flow-api
+                key: token.introspection.url
+      - name: akvo-authz-auth0-proxy
+        image: eu.gcr.io/akvo-lumen/akvo-authz-nginx-auth0:$TRAVIS_COMMIT
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 8082
+        resources:
+          requests:
+            cpu: ${PROXY_POD_CPU_REQUESTS}
+            memory: ${PROXY_POD_MEM_REQUESTS}
+          limits:
+            cpu: ${PROXY_POD_CPU_LIMITS}
+            memory: ${PROXY_POD_MEM_LIMITS}
+        env:
+          - name: SECRETS_MOUNT_PATH
+            value: "/secrets"
+          - name: AUTHZ_API_BACKEND_URL
+            value: "http://localhost:3000"
+          - name: OIDC_DISCOVERY_URL
+            valueFrom:
+              configMapKeyRef:
+                name: flow-api
+                key: oidc.discovery.url
+          - name: OIDC_EXPECTED_ISSUER
+            valueFrom:
+              configMapKeyRef:
+                name: flow-api
+                key: oidc.expected.issuer
+      volumes:
+        - name: secrets
+          secret:
+            secretName: flow-api-secrets

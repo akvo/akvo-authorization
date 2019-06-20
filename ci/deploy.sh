@@ -38,6 +38,10 @@ if [[ "${TRAVIS_TAG:-}" =~ promote-.* ]]; then
     POD_CPU_LIMITS="2000m"
     POD_MEM_REQUESTS="512Mi"
     POD_MEM_LIMITS="512Mi"
+    PROXY_POD_CPU_REQUESTS="100m"
+    PROXY_POD_CPU_LIMITS="200m"
+    PROXY_POD_MEM_REQUESTS="16Mi"
+    PROXY_POD_MEM_LIMITS="32Mi"
 else
     log Environment is test
     gcloud container clusters get-credentials test
@@ -45,6 +49,10 @@ else
     POD_CPU_LIMITS="400m"
     POD_MEM_REQUESTS="300Mi"
     POD_MEM_LIMITS="300Mi"
+    PROXY_POD_CPU_REQUESTS="50m"
+    PROXY_POD_CPU_LIMITS="100m"
+    PROXY_POD_MEM_REQUESTS="16Mi"
+    PROXY_POD_MEM_LIMITS="32Mi"
 
     log Pushing images
     gcloud auth configure-docker
