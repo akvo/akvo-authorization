@@ -68,6 +68,10 @@ sed -e "s/\$TRAVIS_COMMIT/$TRAVIS_COMMIT/" \
   -e "s/\${POD_MEM_REQUESTS}/${POD_MEM_REQUESTS}/" \
   -e "s/\${POD_CPU_LIMITS}/${POD_CPU_LIMITS}/" \
   -e "s/\${POD_MEM_LIMITS}/${POD_MEM_LIMITS}/" \
+  -e "s/\${PROXY_POD_CPU_REQUESTS}/${PROXY_POD_CPU_REQUESTS}/" \
+  -e "s/\${PROXY_POD_MEM_REQUESTS}/${PROXY_POD_MEM_REQUESTS}/" \
+  -e "s/\${PROXY_POD_CPU_LIMITS}/${PROXY_POD_CPU_LIMITS}/" \
+  -e "s/\${PROXY_POD_MEM_LIMITS}/${PROXY_POD_MEM_LIMITS}/" \
   ci/k8s/akvo-unilog.yaml > final-akvo-authz.yaml
 
 kubectl apply -f final-akvo-authz.yaml
