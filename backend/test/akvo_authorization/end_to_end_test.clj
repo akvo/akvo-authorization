@@ -50,7 +50,7 @@
                 (http/get "http://localhost:3000/metrics")
                 :body
                 (str/split-lines)
-                (filter (fn [x] (str/starts-with? x "event_valid{flow_instance=\"u_unilog_events")))
+                (filter (fn [x] (str/starts-with? x "event_valid{db_name=\"u_unilog_events")))
                 (map (fn [x] (-> x (str/split #" ") second Double/parseDouble int))))]
     (assert (#{0 1} (count stats)) "must have one or zero stats")
     (or (first stats) 0)))

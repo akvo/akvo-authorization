@@ -45,9 +45,9 @@
   (prometheus/set metrics-collector :event/queued-up {:flow-instance flow-instance}
     (:count (first (jdbc/query authz-db ["select count(*) as count from process_later_messages where flow_instance=?" flow-instance])))))
 
-(defn increment-metric-counter [metrics-collector flow-instance metric]
+(defn increment-metric-counter [metrics-collector db-name metric]
   (fn [x]
-    (prometheus/inc metrics-collector metric {:flow-instance flow-instance})
+    (prometheus/inc metrics-collector metric {:db-name db-name})
     x))
 
 (defn process-new-events [{:keys [authz-db metrics-collector] :as config} db-name reducible]

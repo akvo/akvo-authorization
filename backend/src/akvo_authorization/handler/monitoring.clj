@@ -18,11 +18,11 @@
     (jvm/initialize)
     (prometheus/register
       (prometheus/counter :event/total {:description "Total number of events read from unilog"
-                                        :labels [:flow-instance]})
+                                        :labels [:db-name]})
       (prometheus/counter :event/correct-type {:description "Total number of events read from unilog that the app is interested in"
-                                               :labels [:flow-instance]})
+                                               :labels [:db-name]})
       (prometheus/counter :event/valid {:description "Total number of events from unilog of that the app is interested in and are also valid"
-                                        :labels [:flow-instance]})
+                                        :labels [:db-name]})
       (prometheus/gauge :event/queued-up {:description "Total number of events queued locally, waiting for some other entity to show up"
                                           :labels [:flow-instance]})
       (prometheus/gauge :event/last-run {:description "Timestamp of last unilog consumer run"
