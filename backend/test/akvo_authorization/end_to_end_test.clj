@@ -71,3 +71,6 @@
         #{survey-full-id})
 
       (is (= (get-valid-event-stat) (+ valid-events-stat-before (count entities)))))))
+
+(deftest health-check
+  (is (= 200 (:status (http/get "http://localhost:3000/healthz"))) ))
