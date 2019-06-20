@@ -37,6 +37,9 @@
                            #ig/ref :akvo-authorization.handler.email/wrap-email]}
 
   :akvo-authorization.handler.email/wrap-email {}
+
+  :akvo-authorization.util.nrepl/nrepl {:bind #duct/env ["NREPL_BIND_HOST" :or "127.0.0.1"]
+                                        :port #duct/env ["NREPL_PORT" Int :or 47889]}
   }
 
  :duct.profile/dev #duct/include "dev"

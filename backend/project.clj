@@ -15,7 +15,7 @@
                  [com.taoensso/nippy "2.14.0"]
                  [com.layerware/hugsql "0.4.9"]
                  [com.climate/claypoole "1.1.4"]
-
+                 [nrepl "0.6.0"]
                  [iapetos "0.1.8"]
                  [io.prometheus/simpleclient_hotspot "0.6.0"]
                  [io.prometheus/simpleclient_jetty_jdk8 "0.6.0"]]
