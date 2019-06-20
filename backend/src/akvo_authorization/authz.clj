@@ -16,14 +16,15 @@
     (get-all-surveys-for-user db {:user-id user-id})))
 
 (defn filter-surveys [allowed-surveys queried-surveys]
-  (let [allowed (into #{} (map (juxt :flow-instance :flow-id)) allowed-surveys)]
+  (let [allowed (into #{} (map (juxt :flow-instance (comp str :flow-id))) allowed-surveys)]
     (filter
       (fn [{:keys [instance_id survey_id]}]
         (allowed [instance_id survey_id]))
       queried-surveys)))
 
 (s/def ::instance_id ::unilog-spec/orgId)
-(s/def ::survey_id ::unilog-spec/id)
+(s/def ::positive-integer-string (s/and string? #(re-matches #"[0-9]+" %)))
+(s/def ::survey_id ::positive-integer-string)
 (s/def ::full-survey-id (s/keys :req-un [::survey_id ::instance_id]))
 (def survey-list-spec (s/coll-of ::full-survey-id))
 
@@ -34,8 +35,7 @@
                          {:pred (str (:pred problem))
                           :val (:val problem)
                           :in (:in problem)})
-                   (:clojure.spec/problems
-                     (s/explain-data survey-list-spec body)))})
+                   (::s/problems (s/explain-data survey-list-spec body)))})
     (->
       (find-all-surveys db email)
       (filter-surveys body)
