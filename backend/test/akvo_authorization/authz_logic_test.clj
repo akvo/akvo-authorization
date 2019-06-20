@@ -103,7 +103,7 @@
     (f unilog-msg)
     entities))
 
-(defn with-authz [auth-tree]
+(defn add-authz [auth-tree]
   (unilog-messages auth-tree (partial unilog/process (dev/local-db))))
 
 (defn remove-test-run-id [s]
@@ -182,13 +182,13 @@
 
 (deftest authz
   (testing "basic "
-    (with-authz [:uat-instance {:auth 1}
-                 [:folder-1
-                  [:folder-1.1 {:auth 4}
-                   [:folder-1.1.1
-                    [:survey1#survey {:auth 2}]]
-                   [:folder-1.1.2 {:auth 3}
-                    [:survey2#survey]]]]])
+    (add-authz [:uat-instance {:auth 1}
+                [:folder-1
+                 [:folder-1.1 {:auth 4}
+                  [:folder-1.1.1
+                   [:survey1#survey {:auth 2}]]
+                  [:folder-1.1.2 {:auth 3}
+                   [:survey2#survey]]]]])
     (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user1)))
     (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user4)))
     (is (= #{[:uat-instance :survey1]} (can-see :user2)))
@@ -196,23 +196,23 @@
     (is (= #{} (can-see :user5)))))
 
 (deftest authz-multiple-instances
-  (with-authz [:uat-instance {:auth 1}
-               [:folder-1
-                [:survey1#survey]]])
-  (with-authz [:prod-instance
-               [:folder-1
-                [:folder-1.1
-                 [:folder-1.1.2 {:auth 1}
-                  [:survey1#survey]]]]])
+  (add-authz [:uat-instance {:auth 1}
+              [:folder-1
+               [:survey1#survey]]])
+  (add-authz [:prod-instance
+              [:folder-1
+               [:folder-1.1
+                [:folder-1.1.2 {:auth 1}
+                 [:survey1#survey]]]]])
   (is (= #{[:uat-instance :survey1] [:prod-instance :survey1]} (can-see :user1))))
 
 (deftest admins
-  (with-authz [:uat-instance
-               [:folder-1
-                [:survey1#survey]]])
-  (with-authz [:prod-instance
-               [:folder-1
-                [:survey1#survey]]])
+  (add-authz [:uat-instance
+              [:folder-1
+               [:survey1#survey]]])
+  (add-authz [:prod-instance
+              [:folder-1
+               [:survey1#survey]]])
   (create-admin :uat-instance :user1)
   (create-admin :uat-instance :user2)
   (let [prod-admin (create-admin :prod-instance :user2)]
@@ -223,14 +223,14 @@
 
 
 (deftest moving-nodes
-  (let [entities (with-authz [:uat-instance {:auth 1}
-                              [:folder-1
-                               [:folder-1.1 {:auth 4}
-                                [:folder-1.1.1
-                                 [:survey1#survey {:auth 2}]]
-                                [:folder-1.1.2 {:auth 3}
-                                 [:survey2#survey]]]
-                               [:folder-1.2 {:auth 5}]]])]
+  (let [entities (add-authz [:uat-instance {:auth 1}
+                             [:folder-1
+                              [:folder-1.1 {:auth 4}
+                               [:folder-1.1.1
+                                [:survey1#survey {:auth 2}]]
+                               [:folder-1.1.2 {:auth 3}
+                                [:survey2#survey]]]
+                              [:folder-1.2 {:auth 5}]]])]
 
     (is (= #{} (can-see :user5)))
     (is (= #{[:uat-instance :survey1]} (can-see :user2)))
@@ -242,11 +242,11 @@
     (is (= #{[:uat-instance :survey1] [:uat-instance :survey2]} (can-see :user1)))))
 
 (deftest changing-email
-  (let [entities (with-authz [:uat-instance
-                              [:folder-1
-                               [:folder-1.1 {:auth 1}
-                                [:folder-1.1.1
-                                 [:survey1#survey]]]]])
+  (let [entities (add-authz [:uat-instance
+                             [:folder-1
+                              [:folder-1.1 {:auth 1}
+                               [:folder-1.1.1
+                                [:survey1#survey]]]]])
         user (find-user entities :user1)]
     (is (= #{[:uat-instance :survey1]} (can-see :user1)))
     (upsert-entity :uat-instance [:user (assoc user :emailAddress (email :new-email))])
@@ -254,53 +254,53 @@
     (is (= #{[:uat-instance :survey1]} (can-see :new-email)))))
 
 (deftest delete-user
-  (let [entities (with-authz [:uat-instance {:auth 1}
-                              [:survey1#survey]])
+  (let [entities (add-authz [:uat-instance {:auth 1}
+                             [:survey1#survey]])
         user (find-user entities :user1)]
     (delete :user :uat-instance user)
     (is (= #{} (can-see :user1)))))
 
 (deftest delete-user-in-a-flow-instance-does-not-affect-his-perms-in-another-instance
-  (let [entities (with-authz [:uat-instance {:auth 1}
-                              [:survey1#survey]])
-        _ (with-authz [:prod-instance
-                       [:survey1#survey {:auth 1}]])]
+  (let [entities (add-authz [:uat-instance {:auth 1}
+                             [:survey1#survey]])
+        _ (add-authz [:prod-instance
+                      [:survey1#survey {:auth 1}]])]
     (delete :user :uat-instance (find-user entities :user1))
     (is (= #{[:prod-instance :survey1]} (can-see :user1)))))
 
 (deftest delete-user-auth
-  (let [entities (with-authz [:uat-instance {:auth 1}
-                              [:survey1#survey]])
+  (let [entities (add-authz [:uat-instance {:auth 1}
+                             [:survey1#survey]])
         user-auths (find-user-auths entities :user1)]
     (doseq [user-auth user-auths]
       (delete :user-authorization :uat-instance user-auth))
     (is (= #{} (can-see :user1)))))
 
 (deftest delete-role
-  (let [entities (with-authz [:uat-instance {:auth 1}
-                              [:survey1#survey]])
+  (let [entities (add-authz [:uat-instance {:auth 1}
+                             [:survey1#survey]])
         role (find-role entities)]
     (delete :role :uat-instance role)
     (is (= #{} (can-see :user1)))))
 
 (deftest delete-node
-  (let [entities (with-authz [:uat-instance {:auth 1}
-                              [:folder-1
-                               [:survey1#survey]
-                               [:folder-1.1
-                                [:folder-1.1.1
-                                 [:survey2#survey]]]]])
+  (let [entities (add-authz [:uat-instance {:auth 1}
+                             [:folder-1
+                              [:survey1#survey]
+                              [:folder-1.1
+                               [:folder-1.1.1
+                                [:survey2#survey]]]]])
         node (find-node entities :folder-1.1)]
     (delete :node :uat-instance node)
     (is (= #{[:uat-instance :survey1]} (can-see :user1)))))
 
 (deftest delete-node-with-perms-attached-to-survey
-  (let [entities (with-authz [:uat-instance
-                              [:folder-1
-                               [:survey1#survey {:auth 1}]
-                               [:folder-1.1
-                                [:folder-1.1.1
-                                 [:survey2#survey {:auth 1}]]]]])
+  (let [entities (add-authz [:uat-instance
+                             [:folder-1
+                              [:survey1#survey {:auth 1}]
+                              [:folder-1.1
+                               [:folder-1.1.1
+                                [:survey2#survey {:auth 1}]]]]])
         node (find-node entities :folder-1.1)]
     (delete :node :uat-instance node)
     (is (= #{[:uat-instance :survey1]} (can-see :user1)))))
