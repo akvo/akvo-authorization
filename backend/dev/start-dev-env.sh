@@ -13,7 +13,7 @@ trap _term SIGTERM
 ./dev/wait-for-dependencies.sh
 
 if [[ "$1" == "integration-test" ]]; then
-    lein test :integration
+    lein eftest :integration
 else
     lein repl :headless
 fi

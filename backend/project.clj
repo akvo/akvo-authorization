@@ -20,7 +20,8 @@
                  [io.prometheus/simpleclient_hotspot "0.6.0"]
                  [io.prometheus/simpleclient_jetty_jdk8 "0.6.0"]]
   :plugins [[duct/lein-duct "0.12.1"]
-            [lein-ancient "0.6.15"]]
+            [lein-ancient "0.6.15"]
+            [lein-eftest "0.5.8"]]
   :main ^:skip-aot akvo-authorization.main
   :resource-paths ["resources" "target/resources"]
   :prep-tasks     ["javac" "compile" ["run" ":duct/compiler"]]
