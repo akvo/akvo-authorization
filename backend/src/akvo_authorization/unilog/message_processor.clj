@@ -1,4 +1,4 @@
-(ns akvo-authorization.unilog.core
+(ns akvo-authorization.unilog.message-processor
   (:require [hugsql.core :as hugsql]
             [clojure.set :refer [rename-keys]]
             [clojure.java.jdbc :as jdbc]

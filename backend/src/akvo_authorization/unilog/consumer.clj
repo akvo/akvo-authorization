@@ -3,7 +3,7 @@
             [clojure.string :as str]
             [integrant.core :as ig]
             [akvo-authorization.unilog.spec :as unilog-spec]
-            [akvo-authorization.unilog.core]
+            [akvo-authorization.unilog.message-processor]
             [jsonista.core :as json]
             [clojure.spec.alpha :as s]
             [com.climate.claypoole :as cp]
@@ -73,7 +73,7 @@
         ([_]
          (store-offset!))
         ([_ batch]
-         (akvo-authorization.unilog.core/process authz-db batch)
+         (akvo-authorization.unilog.message-processor/process authz-db batch)
          (record-number-of-queued-messages config (:flow-instance @last-unilog-id))
          (store-offset!)))
       []

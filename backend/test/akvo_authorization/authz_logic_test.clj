@@ -1,6 +1,6 @@
 (ns akvo-authorization.authz-logic-test
   (:require [clojure.test :refer :all]
-            [akvo-authorization.unilog.core :as unilog]
+            [akvo-authorization.unilog.message-processor :as unilog]
             [akvo-authorization.authz :as authz]
             ragtime.jdbc
             [reifyhealth.specmonstah.core :as sm]

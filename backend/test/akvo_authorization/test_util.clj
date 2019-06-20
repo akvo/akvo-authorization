@@ -1,6 +1,6 @@
 (ns akvo-authorization.test-util
   (:require [clojure.test :refer :all]
-            [akvo-authorization.unilog.core :as unilog]
+            [akvo-authorization.unilog.message-processor :as unilog]
             dev
             [reifyhealth.specmonstah.core :as sm]
             [reifyhealth.specmonstah.spec-gen :as sg]
