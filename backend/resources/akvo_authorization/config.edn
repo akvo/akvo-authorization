@@ -1,13 +1,11 @@
 {:duct.profile/base
  {:duct.core/project-ns akvo-authorization
 
-  :duct.router/cascading []
+  :duct.router/cascading [#ig/ref :akvo-authorization.authz/endpoint]
 
   :duct.migrator/ragtime {:database #ig/ref :authz/authz-db
                           :migrations ^:replace #ig/ref :akvo-authorization.authz/migration}
   :akvo-authorization.authz/migration {}
-
-  ;;:akvo-authorization.handler/monitoring {:db #ig/ref :authz/authz-db}
 
   [:duct.database.sql/hikaricp :authz/authz-db] {:idle-timeout 300000
                                                  :minimum-idle 2
@@ -22,6 +20,7 @@
   :akvo-authorization.handler.monitoring/collector {}
   :akvo-authorization.handler.monitoring/middleware {:collector #ig/ref :akvo-authorization.handler.monitoring/collector}
 
+  :akvo-authorization.authz/endpoint {:db #ig/ref :authz/authz-db}
   :akvo-authorization.unilog.consumer/start-cron
   {:wait-for-migrations #ig/ref :duct.migrator/ragtime
    :parallelism 5                                           ;; Probably should be the same as the unilog-consumer-db thread pool size
@@ -34,7 +33,10 @@
                :prefix "u_"
                :db-name #duct/env "UNILOG_DATABASE_NAME"}}
   :duct.handler/root
-  {:middleware ^:distinct [#ig/ref :akvo-authorization.handler.monitoring/middleware]}
+  {:middleware ^:distinct [#ig/ref :akvo-authorization.handler.monitoring/middleware
+                           #ig/ref :akvo-authorization.handler.email/wrap-email]}
+
+  :akvo-authorization.handler.email/wrap-email {}
   }
 
  :duct.profile/dev #duct/include "dev"

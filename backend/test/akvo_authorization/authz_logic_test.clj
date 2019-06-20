@@ -1,9 +1,7 @@
 (ns akvo-authorization.authz-logic-test
   (:require [clojure.test :refer :all]
-            [integrant.core :as ig]
             [akvo-authorization.unilog.core :as unilog]
             [akvo-authorization.authz :as authz]
-            [ragtime.core :as ragtime]
             ragtime.jdbc
             [reifyhealth.specmonstah.core :as sm]
             [reifyhealth.specmonstah.spec-gen :as sg]
@@ -14,24 +12,13 @@
             [clojure.spec.alpha :as s]))
 
 (def ^:dynamic *test-run-id* 0)
-(defonce test-run-seq (atom 0))
 
 (defn unique-run-number
   [f]
-  (binding [*test-run-id* (swap! test-run-seq inc)]
+  (binding [*test-run-id* (+ 10 (unilog/next-id (dev/local-db)))]
     (f)))
 
-(defn wipe-db [f]
-  (doseq [m (reverse (ragtime.jdbc/load-resources "migrations"))]
-    (ragtime/rollback (ragtime.jdbc/sql-database (dev/local-db)) m))
-  (ragtime/migrate-all
-    (ragtime.jdbc/sql-database (dev/local-db))
-    {}
-    (ragtime.jdbc/load-resources "migrations"))
-  (f))
-
 (use-fixtures :each unique-run-number)
-(use-fixtures :once wipe-db)
 
 (def schema
   {:user {:prefix :u
@@ -109,12 +96,15 @@
 (defn flow-instance-with-test-id [flow-instance]
   (str (name flow-instance) "-" *test-run-id*))
 
-(defn with-authz [auth-tree & body]
+(defn unilog-messages [auth-tree f]
   (let [entities (shuffle (get-entities (perms auth-tree)))
         flow-instance (flow-instance-with-test-id (first auth-tree))
         unilog-msg (map-indexed (partial ->unilog flow-instance) entities)]
-    (unilog/process (dev/local-db) unilog-msg)
+    (f unilog-msg)
     entities))
+
+(defn with-authz [auth-tree]
+  (unilog-messages auth-tree (partial unilog/process (dev/local-db))))
 
 (defn remove-test-run-id [s]
   (str/replace s #"-[0-9]+$" ""))

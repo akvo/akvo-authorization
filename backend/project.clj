@@ -43,6 +43,8 @@
                                 [metosin/testit "0.4.0"]
                                 [spec-provider "0.4.14"]
                                 [kerodon "0.9.0"]
+                                [clj-http "3.10.0"]
+                                [cheshire "5.8.1"]
                                 [org.akvo.flow/akvo-flow "v1.9.43-5-gff7e9ea" :classifier "classes"
                                  :exclusions [[commons-fileupload]]]
                                 [com.google.appengine/appengine-tools-sdk "1.9.50"]
