@@ -18,7 +18,7 @@ spec:
         environment: ${ENVIRONMENT}
       annotations:
         prometheus.io/scrape: 'true'
-        prometheus.io/port: '3030'
+        prometheus.io/port: '3000'
     spec:
       containers:
       - name: akvo-authz
