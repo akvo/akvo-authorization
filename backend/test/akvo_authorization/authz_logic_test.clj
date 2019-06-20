@@ -2,9 +2,6 @@
   (:require [clojure.test :refer :all]
             [akvo-authorization.unilog.message-processor :as unilog]
             [akvo-authorization.authz :as authz]
-            ragtime.jdbc
-            [reifyhealth.specmonstah.core :as sm]
-            [reifyhealth.specmonstah.spec-gen :as sg]
             [akvo-authorization.unilog.spec :as unilog-spec]
             [testit.core :as it :refer [=in=> fact =>]]
             [clojure.spec.gen.alpha :as gen]
