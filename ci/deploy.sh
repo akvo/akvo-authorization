@@ -76,6 +76,7 @@ sed -e "s/\$TRAVIS_COMMIT/$TRAVIS_COMMIT/" \
   ci/k8s/akvo-unilog.yaml > final-akvo-authz.yaml
 
 kubectl apply -f final-akvo-authz.yaml
+kubectl apply -f ci/k8s/service.yaml
 
 ci/k8s/wait-for-k8s-deployment-to-be-ready.sh
 
