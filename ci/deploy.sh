@@ -34,10 +34,10 @@ if [[ "${TRAVIS_TAG:-}" =~ promote-.* ]]; then
     log Environment is production
     gcloud container clusters get-credentials production
     ENVIRONMENT=production
-    POD_CPU_REQUESTS="400m"
-    POD_CPU_LIMITS="2000m"
-    POD_MEM_REQUESTS="512Mi"
-    POD_MEM_LIMITS="512Mi"
+    POD_CPU_REQUESTS="2000m"
+    POD_CPU_LIMITS="4000m"
+    POD_MEM_REQUESTS="800Mi"
+    POD_MEM_LIMITS="800Mi"
     PROXY_POD_CPU_REQUESTS="100m"
     PROXY_POD_CPU_LIMITS="200m"
     PROXY_POD_MEM_REQUESTS="16Mi"
@@ -45,10 +45,10 @@ if [[ "${TRAVIS_TAG:-}" =~ promote-.* ]]; then
 else
     log Environment is test
     gcloud container clusters get-credentials test
-    POD_CPU_REQUESTS="200m"
-    POD_CPU_LIMITS="400m"
-    POD_MEM_REQUESTS="300Mi"
-    POD_MEM_LIMITS="300Mi"
+    POD_CPU_REQUESTS="2000m"
+    POD_CPU_LIMITS="4000m"
+    POD_MEM_REQUESTS="800Mi"
+    POD_MEM_LIMITS="800Mi"
     PROXY_POD_CPU_REQUESTS="50m"
     PROXY_POD_CPU_LIMITS="100m"
     PROXY_POD_MEM_REQUESTS="16Mi"
