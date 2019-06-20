@@ -5,7 +5,7 @@
             [testit.core :as it :refer [=in=> fact => =eventually-in=>]]
             [testit.eventually :as eventually]
             [clj-http.client :as http]
-            [akvo-authorization.authz-logic-test :as authz-test]
+            [akvo-authorization.test-util :as tu]
             [jsonista.core :as json]
             [clojure.string :as str])
   (:import (org.postgresql.util PGobject)))
@@ -20,7 +20,7 @@
   (jdbc/delete! unilog-db "event_log" nil)
   (f))
 
-(use-fixtures :each authz-test/unique-run-number)
+(use-fixtures :each tu/unique-run-number)
 (use-fixtures :once wipe-db)
 
 (defn jsonb
@@ -31,7 +31,7 @@
     (.setValue (json/write-value-as-string s))))
 
 (defn insert-in-unilog-db [auth-tree]
-  (authz-test/unilog-messages auth-tree
+  (tu/unilog-messages auth-tree
     (fn [unilog-messages]
       (doseq [message unilog-messages]
         (jdbc/insert! unilog-db "event_log" {:payload (-> message :payload jsonb)})))))
@@ -61,12 +61,12 @@
     (let [valid-events-stat-before (get-valid-event-stat)
           entities (insert-in-unilog-db [:instance1 {:auth 1}
                                          [:survey1#survey]])
-          survey (authz-test/find-node entities :survey1)
-          survey-full-id {:instance_id (authz-test/flow-instance-with-test-id :instance1)
+          survey (tu/find-node entities :survey1)
+          survey-full-id {:instance_id (tu/flow-instance-with-test-id :instance1)
                           :survey_id (:id survey)}]
 
       (fact
-        (check-perms (authz-test/email :user1) [survey-full-id])
+        (check-perms (tu/email :user1) [survey-full-id])
         =eventually-in=>
         #{survey-full-id})
 

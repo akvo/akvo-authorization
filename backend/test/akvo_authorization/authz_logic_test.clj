@@ -7,148 +7,21 @@
             [reifyhealth.specmonstah.spec-gen :as sg]
             [akvo-authorization.unilog.spec :as unilog-spec]
             [testit.core :as it :refer [=in=> fact =>]]
-            [clojure.string :as str]
             [clojure.spec.gen.alpha :as gen]
+            [akvo-authorization.test-util :as tu]
             [clojure.spec.alpha :as s]))
 
-(def ^:dynamic *test-run-id* 0)
-
-(defn unique-run-number
-  [f]
-  (binding [*test-run-id* (+ 10 (unilog/next-id (dev/local-db)))]
-    (f)))
-
-(use-fixtures :each unique-run-number)
-
-(def schema
-  {:user {:prefix :u
-          :spec ::unilog-spec/user}
-   :user-authorization {:prefix :ua
-                        :spec ::unilog-spec/userAuthorization
-                        :relations {:userId [:user :id]
-                                    :roleId [:role :id]
-                                    :securedObjectId [:node :id]}}
-   :node {:prefix :f
-          :relations {:parentId [:node :id]}
-          :spec ::unilog-spec/surveyGroup}
-   :role {:prefix :ur
-          :spec ::unilog-spec/userRole}})
-
-(defn get-entities [specmostah-definition]
-  (let [tmp (atom [])]
-    (-> (sg/ent-db-spec-gen {:schema schema}
-          specmostah-definition)
-      (sm/visit-ents :insert (fn insert
-                               [db ent-name visit-key]
-                               (let [{:keys [spec-gen ent-type] :as attrs} (sm/ent-attrs db ent-name)]
-                                 (when-not (visit-key attrs)
-                                   (swap! tmp conj [ent-type spec-gen])
-                                   true)))))
-    @tmp))
-
-(defn email
-  [user-id]
-  {:pre [(keyword? user-id)]}
-  (str (name user-id) "@akvo.org-" *test-run-id*))
-
-(defn perms* [parent [node-name & [maybe-attrs & more :as all]]]
-  (let [[node-name type] (str/split (name node-name) #"#")
-        node-name (keyword node-name)
-        next-parent (if parent node-name ::sm/omit)
-        user-auth (if (map? maybe-attrs)
-                    (let [user-id (keyword (str "user" (get maybe-attrs :auth)))]
-                      {:user [[user-id {:spec-gen {:emailAddress (email user-id)
-                                                   :superAdmin false}}]]
-                       :user-authorization [[1 {:refs {:userId user-id
-                                                       :securedObjectId next-parent}}]]}))
-        children (map
-                   (partial perms* next-parent)
-                   (if (map? maybe-attrs) more all))]
-    (apply merge-with (fn [left right] (distinct (concat left right)))
-      (when parent
-        {:node [[node-name {:spec-gen {:name (name node-name)
-                                       :surveyGroupType (if type (str/upper-case type) "FOLDER")}
-                            :refs {:parentId parent}}]]})
-      user-auth
-      children)))
-
-(defn perms [tree]
-  (perms* nil tree))
-
-(defn ->unilog [flow-instance idx [type entity]]
-  (let [fill-with-0 (fn [k]
-                      (fn [e]
-                        (update e k (fn [v] (or v 0)))))
-        [eventType fix-entity-fn] (case type
-                                    :user ["userCreated" identity]
-                                    :role ["userRoleCreated" identity]
-                                    :user-authorization ["userAuthorizationCreated" (fill-with-0 :securedObjectId)]
-                                    :node ["surveyGroupCreated" (fill-with-0 :parentId)])
-        value {:id idx
-               :payload {:eventType eventType
-                         :orgId (name flow-instance)
-                         :entity (fix-entity-fn entity)}}]
-    (when-not (unilog-spec/valid? value)
-      (unilog-spec/explain value)
-      (throw (ex-info "invalid data generated" {:data value})))
-    value))
-
-(defn flow-instance-with-test-id [flow-instance]
-  (str (name flow-instance) "-" *test-run-id*))
-
-(defn unilog-messages [auth-tree f]
-  (let [entities (shuffle (get-entities (perms auth-tree)))
-        flow-instance (flow-instance-with-test-id (first auth-tree))
-        unilog-msg (map-indexed (partial ->unilog flow-instance) entities)]
-    (f unilog-msg)
-    entities))
+(use-fixtures :each tu/unique-run-number)
 
 (defn add-authz [auth-tree]
-  (unilog-messages auth-tree (partial unilog/process (dev/local-db))))
-
-(defn remove-test-run-id [s]
-  (str/replace s #"-[0-9]+$" ""))
+  (tu/unilog-messages auth-tree (partial unilog/process (dev/local-db))))
 
 (defn can-see [user]
-  (let [surveys (authz/find-all-surveys (dev/local-db) (email user))
+  (let [surveys (authz/find-all-surveys (dev/local-db) (tu/email user))
         instance-name-pairs (map (juxt
-                                   (comp keyword remove-test-run-id :flow-instance)
+                                   (comp keyword tu/remove-test-run-id :flow-instance)
                                    (comp keyword :name)) surveys)]
     (set instance-name-pairs)))
-
-(defn find-user [entities user]
-  (->> entities
-    (filter (fn [[type e]]
-              (and
-                (= :user type)
-                (= (email user) (:emailAddress e)))))
-    first
-    second))
-
-(defn find-user-auths [entities user]
-  (when-let [user (find-user entities user)]
-    (->> entities
-      (filter (fn [[type e]]
-                (and
-                  (= :user-authorization type)
-                  (= (:id user) (:userId e)))))
-      (map second))))
-
-(defn find-node [entities node-name]
-  (->> entities
-    (filter (fn [[type e]]
-              (and
-                (= :node type)
-                (= (name node-name) (:name e)))))
-    first
-    second))
-
-(defn find-role [entities]
-  (->> entities
-    (filter (fn [[type _]]
-              (= :role type)))
-    first
-    second))
 
 (defn delete [type flow-instance entity]
   (unilog/process (dev/local-db)
@@ -158,24 +31,24 @@
                              :role "userRoleDeleted"
                              :user-authorization "userAuthorizationDeleted"
                              :node "surveyGroupDeleted")
-                :orgId (flow-instance-with-test-id flow-instance)
+                :orgId (tu/flow-instance-with-test-id flow-instance)
                 :entity {:id (:id entity)}}}]))
 
 (defn upsert-entity [flow-instance [type entity :as type-entity-pair]]
-  (unilog/process (dev/local-db) [(->unilog
-                                    (flow-instance-with-test-id flow-instance)
+  (unilog/process (dev/local-db) [(tu/->unilog
+                                    (tu/flow-instance-with-test-id flow-instance)
                                     (rand-int 10000000)
                                     type-entity-pair)]))
 
 (defn move-node-under [entities flow-instance entity-to-move to-entity]
-  (let [node-to-move (find-node entities entity-to-move)
-        target-parent (find-node entities to-entity)]
+  (let [node-to-move (tu/find-node entities entity-to-move)
+        target-parent (tu/find-node entities to-entity)]
     (upsert-entity flow-instance [:node (assoc node-to-move :parentId (:id target-parent))])))
 
 (defn create-admin [flow-instance user-id]
   (let [user (merge
                (gen/generate (s/gen ::unilog-spec/user))
-               {:emailAddress (email user-id)
+               {:emailAddress (tu/email user-id)
                 :superAdmin true})]
     (upsert-entity flow-instance [:user user])
     user))
@@ -247,16 +120,16 @@
                               [:folder-1.1 {:auth 1}
                                [:folder-1.1.1
                                 [:survey1#survey]]]]])
-        user (find-user entities :user1)]
+        user (tu/find-user entities :user1)]
     (is (= #{[:uat-instance :survey1]} (can-see :user1)))
-    (upsert-entity :uat-instance [:user (assoc user :emailAddress (email :new-email))])
+    (upsert-entity :uat-instance [:user (assoc user :emailAddress (tu/email :new-email))])
     (is (= #{} (can-see :user1)))
     (is (= #{[:uat-instance :survey1]} (can-see :new-email)))))
 
 (deftest delete-user
   (let [entities (add-authz [:uat-instance {:auth 1}
                              [:survey1#survey]])
-        user (find-user entities :user1)]
+        user (tu/find-user entities :user1)]
     (delete :user :uat-instance user)
     (is (= #{} (can-see :user1)))))
 
@@ -265,13 +138,13 @@
                              [:survey1#survey]])
         _ (add-authz [:prod-instance
                       [:survey1#survey {:auth 1}]])]
-    (delete :user :uat-instance (find-user entities :user1))
+    (delete :user :uat-instance (tu/find-user entities :user1))
     (is (= #{[:prod-instance :survey1]} (can-see :user1)))))
 
 (deftest delete-user-auth
   (let [entities (add-authz [:uat-instance {:auth 1}
                              [:survey1#survey]])
-        user-auths (find-user-auths entities :user1)]
+        user-auths (tu/find-user-auths entities :user1)]
     (doseq [user-auth user-auths]
       (delete :user-authorization :uat-instance user-auth))
     (is (= #{} (can-see :user1)))))
@@ -279,7 +152,7 @@
 (deftest delete-role
   (let [entities (add-authz [:uat-instance {:auth 1}
                              [:survey1#survey]])
-        role (find-role entities)]
+        role (tu/find-role entities)]
     (delete :role :uat-instance role)
     (is (= #{} (can-see :user1)))))
 
@@ -290,7 +163,7 @@
                               [:folder-1.1
                                [:folder-1.1.1
                                 [:survey2#survey]]]]])
-        node (find-node entities :folder-1.1)]
+        node (tu/find-node entities :folder-1.1)]
     (delete :node :uat-instance node)
     (is (= #{[:uat-instance :survey1]} (can-see :user1)))))
 
@@ -301,7 +174,7 @@
                               [:folder-1.1
                                [:folder-1.1.1
                                 [:survey2#survey {:auth 1}]]]]])
-        node (find-node entities :folder-1.1)]
+        node (tu/find-node entities :folder-1.1)]
     (delete :node :uat-instance node)
     (is (= #{[:uat-instance :survey1]} (can-see :user1)))))
 
@@ -316,50 +189,6 @@
       false any any nil flow-root
       false any any any any
       )))
-
-(deftest test-dsl
-  (binding [*test-run-id* 99999]
-    (testing "testing that the DSL generates the expected specmonstah, so testing the tests"
-      (it/facts
-        (perms [:root {:auth 1}])
-        =>
-        {:user [[:user1 {:spec-gen {:emailAddress "user1@akvo.org-99999" :superAdmin false}}]],
-         :user-authorization [[1 {:refs {:userId :user1 :securedObjectId ::sm/omit}}]]}
-
-        (perms [:root {:auth 1}
-                [:1
-                 [:1.1]]])
-        =in=>
-        {:node ^:in-any-order [[:1 {:refs {:parentId ::sm/omit}}]
-                               [:1.1 {:refs {:parentId :1}}]]}
-
-        (perms [:root
-                [:1
-                 [:1.1 {:auth 1}]]])
-        =in=>
-        {:user-authorization [[1 {:refs {:securedObjectId :1.1}}]]}
-
-        (perms [:root
-                [:1]
-                [:2 {:auth 1}]])
-        =in=>
-        {:node ^:in-any-order [[:1 {:refs {:parentId ::sm/omit}}]
-                               [:2 {:refs {:parentId ::sm/omit}}]]
-         :user-authorization [[1 {:refs {:securedObjectId :2}}]]}
-
-        (perms [:root
-                [:1 {:auth 1}]
-                [:2 {:auth 2}]])
-        =in=>
-        {:user ^:in-any-order [[:user1 it/any] [:user2 it/any]]
-         :user-authorization ^:in-any-order [[1 {:refs {:userId :user1 :securedObjectId :1}}]
-                                             [1 {:refs {:userId :user2 :securedObjectId :2}}]]}
-
-        (perms [:root
-                [:1#survey {:auth 1}]])
-        =in=>
-        {:node ^:in-any-order [[:1 {:spec-gen {:name "1" :surveyGroupType "SURVEY"}}]]}))))
-
 
 (comment
 
