@@ -5,8 +5,6 @@ services:
     environment:
       - WAIT_FOR_DEPS=true
       - NREPL_BIND_HOST=0.0.0.0
-    ports:
-      - "47889:47889"
     volumes:
       - ./backend/dev:/app/dev
 #      - ./dev/dev-config.edn:/etc/config/akvo-unilog/config.edn
