@@ -4,8 +4,8 @@
   :duct.router/cascading [#ig/ref :akvo-authorization.authz/endpoint]
 
   :duct.migrator/ragtime {:database #ig/ref :authz/authz-db
-                          :migrations ^:replace #ig/ref :akvo-authorization.authz/migration}
-  :akvo-authorization.authz/migration {}
+                          :migrations ^:replace #ig/ref :akvo-authorization.db-utils/migration}
+  :akvo-authorization.db-utils/migration {}
 
   [:duct.database.sql/hikaricp :authz/authz-db] {:idle-timeout 300000
                                                  :minimum-idle 2

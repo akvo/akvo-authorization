@@ -1,37 +1,14 @@
 (ns akvo-authorization.unilog.core
   (:require [hugsql.core :as hugsql]
             [clojure.set :refer [rename-keys]]
-            [hugsql-adapter-case.adapters :as adapter-case]
             [clojure.java.jdbc :as jdbc]
             [taoensso.nippy :as nippy]
-            [clojure.data.json :as json]
-            [clojure.string :as str])
-  (:import (org.postgresql.util PGobject)))
+            [akvo-authorization.db-utils :refer [->ltree]]
+            [clojure.string :as str]))
 
-(hugsql/def-db-fns "sql/nodes.sql" {:adapter (adapter-case/kebab-adapter)})
-(hugsql/def-db-fns "sql/user.sql" {:adapter (adapter-case/kebab-adapter)})
-(hugsql/def-db-fns "sql/queue.sql" {:adapter (adapter-case/kebab-adapter)})
-
-(defrecord ltree [v])
-
-(extend-protocol jdbc/IResultSetReadColumn
-  PGobject
-  (result-set-read-column [pgobj _metadata _index]
-    (let [type (.getType pgobj)
-          value (.getValue pgobj)]
-      (case type
-        "json" (json/read-str value)
-        "jsonb" (json/read-str value)
-        "citext" (str value)
-        "ltree" value
-        value))))
-
-(extend-protocol jdbc/ISQLValue
-  ltree
-  (sql-value [v]
-    (doto (PGobject.)
-      (.setType "ltree")
-      (.setValue (:v v)))))
+(hugsql/def-db-fns "sql/nodes.sql")
+(hugsql/def-db-fns "sql/user.sql")
+(hugsql/def-db-fns "sql/queue.sql")
 
 (defn next-id [db]
   (:nextval (next-node-id-seq db)))

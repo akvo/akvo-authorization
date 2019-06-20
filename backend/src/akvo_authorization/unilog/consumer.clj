@@ -8,12 +8,11 @@
             [clojure.spec.alpha :as s]
             [com.climate.claypoole :as cp]
             [hugsql.core :as hugsql]
-            [hugsql-adapter-case.adapters :as adapter-case]
             [taoensso.timbre :as timbre]
             [iapetos.core :as prometheus])
   (:import (java.util.concurrent Executors TimeUnit)))
 
-(hugsql/def-db-fns "sql/offsets.sql" {:adapter (adapter-case/kebab-adapter)})
+(hugsql/def-db-fns "sql/offsets.sql")
 
 (defn event-log-spec [config]
   (assert (not (empty? config)) "Config map is empty")

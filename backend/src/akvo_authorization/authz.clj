@@ -2,27 +2,18 @@
   (:require [integrant.core :as ig]
             ragtime.jdbc
             [clojure.set :refer [rename-keys]]
-            [hugsql-adapter-case.adapters :as adapter-case]
             [hugsql.core :as hugsql]
             [akvo-authorization.unilog.spec :as unilog-spec]
             [compojure.core :refer [POST routes]]
             [ring.util.response :as ring-util]
             [clojure.spec.alpha :as s]))
 
-(defmethod ig/init-key ::migration [_ config]
-  (ragtime.jdbc/load-resources "migrations"))
-
-(hugsql/def-db-fns "sql/user.sql" {:adapter (adapter-case/kebab-adapter)})
-(hugsql/def-db-fns "sql/authz.sql" {:adapter (adapter-case/kebab-adapter)})
+(hugsql/def-db-fns "sql/user.sql")
+(hugsql/def-db-fns "sql/authz.sql")
 
 (defn find-all-surveys [db email]
   (let [user-id (:id (get-user-by-email db {:email email}))]
     (get-all-surveys-for-user db {:user-id user-id})))
-
-(s/def ::instance_id ::unilog-spec/orgId)
-(s/def ::survey_id ::unilog-spec/id)
-(s/def ::full-survey-id (s/keys :req-un [::survey_id ::instance_id]))
-(def survey-list-spec (s/coll-of ::full-survey-id))
 
 (defn filter-surveys [allowed-surveys queried-surveys]
   (let [allowed (into #{} (map (juxt :flow-instance :flow-id)) allowed-surveys)]
@@ -30,6 +21,11 @@
       (fn [{:keys [instance_id survey_id]}]
         (allowed [instance_id survey_id]))
       queried-surveys)))
+
+(s/def ::instance_id ::unilog-spec/orgId)
+(s/def ::survey_id ::unilog-spec/id)
+(s/def ::full-survey-id (s/keys :req-un [::survey_id ::instance_id]))
+(def survey-list-spec (s/coll-of ::full-survey-id))
 
 (defn surveys [db email body]
   (if-not (s/valid? survey-list-spec body)
