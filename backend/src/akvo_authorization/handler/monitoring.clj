@@ -25,7 +25,7 @@
                                         :labels [:db-name]})
       (prometheus/gauge :event/queued-up {:description "Total number of events queued locally, waiting for some other entity to show up"
       (prometheus/gauge :event/unilog-offset {:description "Last processed unilog offset"
-                                          :labels [:db-name]})
+                                              :labels [:db-name]})
       (prometheus/gauge :event/last-run {:description "Timestamp of last unilog consumer run"
                                          :labels [:db-name]})
       (prometheus/gauge :event/last-success {:description "Timestamp of last unilog consumer run without exceptions"
