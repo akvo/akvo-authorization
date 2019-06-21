@@ -24,6 +24,7 @@
       (prometheus/counter :event/valid {:description "Total number of events from unilog of that the app is interested in and are also valid"
                                         :labels [:db-name]})
       (prometheus/gauge :event/queued-up {:description "Total number of events queued locally, waiting for some other entity to show up"
+                                          :labels [:flow-instance]})
       (prometheus/gauge :event/unilog-offset {:description "Last processed unilog offset"
                                               :labels [:db-name]})
       (prometheus/gauge :event/last-run {:description "Timestamp of last unilog consumer run"
