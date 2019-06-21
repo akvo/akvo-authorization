@@ -53,9 +53,10 @@
   (let [last-unilog-id (atom nil)
         store-offset! (fn []
                         (when @last-unilog-id
-                          (upsert-offset! authz-db {:unilog-id (:unilog-id @last-unilog-id)
-                                                    :db-name db-name})
-                          (prometheus/set metrics-collector :event/unilog-offset {:db-name db-name} @last-unilog-id)))
+                          (let [unilog-id (:unilog-id @last-unilog-id)]
+                            (upsert-offset! authz-db {:unilog-id unilog-id
+                                                      :db-name db-name})
+                            (prometheus/set metrics-collector :event/unilog-offset {:db-name db-name} unilog-id))))
         pipeline (comp
                    (map (fn [x] (update x :payload json/read-value mapper)))
                    (map (increment-metric-counter metrics-collector db-name :event/total))

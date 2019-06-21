@@ -52,21 +52,28 @@
 (defn prod-like-env []
   (= "true" (System/getenv "PROD_LIKE_ENV")))
 
-(defn get-valid-event-stat [& [host]]
+(defn get-stat [stat & [host]]
   (let [unilog-consumer-host (or host (if (prod-like-env) "authz-consumer" "authz"))
         stats (->>
                 (http/get (str "http://" unilog-consumer-host ":3000/metrics"))
                 :body
                 (str/split-lines)
-                (filter (fn [x] (str/starts-with? x "event_valid{db_name=\"u_unilog_events")))
+                (filter (fn [x] (str/starts-with? x stat)))
                 (map (fn [x] (-> x (str/split #" ") second Double/parseDouble int))))]
     (assert (#{0 1} (count stats)) "must have one or zero stats")
     (or (first stats) 0)))
+
+(defn get-unilog-offset-stat [& [host]]
+  (get-stat "event_unilog_offset{db_name=\"u_u" host))
+
+(defn get-valid-event-stat [& [host]]
+  (get-stat "event_valid{db_name=\"u_unilog_events" host))
 
 (deftest end-to-end
   (binding [eventually/*eventually-timeout-ms* 10000
             eventually/*eventually-polling-ms* 100]
     (let [valid-events-stat-before (get-valid-event-stat)
+          unilog-offset-before (get-unilog-offset-stat)
           entities (insert-in-unilog-db [:instance1 {:auth 1}
                                          [:survey1#survey]])
           survey (tu/find-node entities :survey1)
@@ -79,6 +86,7 @@
         #{survey-full-id})
 
       (is (= (get-valid-event-stat) (+ valid-events-stat-before (count entities))))
+      (is (> (get-unilog-offset-stat) unilog-offset-before))
       (when (prod-like-env)
         (is (= 0 (get-valid-event-stat "authz")))))))
 
