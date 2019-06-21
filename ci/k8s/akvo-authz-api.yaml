@@ -5,7 +5,7 @@ metadata:
   name: akvo-authz
   namespace: default
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       run: akvo-authz
@@ -43,6 +43,8 @@ spec:
                fieldPath: metadata.namespace
          - name: APP_VERSION
            value: $TRAVIS_COMMIT
+         - name: AUTHZ_PROFILE_TO_RUN
+           value: "authz.profile/api"
          - name: ENV_NAME
            valueFrom:
              configMapKeyRef:
@@ -53,26 +55,6 @@ spec:
              secretKeyRef:
                name: akvo-authz
                key: authz-database-url
-         - name: UNILOG_DATABASE_HOST
-           valueFrom:
-             secretKeyRef:
-               name: akvo-authz
-               key: unilog-database-host
-         - name: UNILOG_DATABASE_NAME
-           valueFrom:
-             secretKeyRef:
-               name: akvo-authz
-               key: unilog-database-name
-         - name: UNILOG_DATABASE_USER
-           valueFrom:
-             secretKeyRef:
-               name: akvo-authz
-               key: unilog-database-user
-         - name: UNILOG_DATABASE_PASSWORD
-           valueFrom:
-             secretKeyRef:
-               name: akvo-authz
-               key: unilog-database-password
         livenessProbe:
           httpGet:
             path: /healthz

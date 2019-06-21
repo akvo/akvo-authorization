@@ -1,0 +1,87 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: akvo-authz-unilog-consumer
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: akvo-authz-unilog-consumer
+  template:
+    metadata:
+      labels:
+        run: akvo-authz-unilog-consumer
+        akvo-authz-version: $TRAVIS_COMMIT
+        app: akvo-authz
+        environment: ${ENVIRONMENT}
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '3000'
+    spec:
+      containers:
+      - name: akvo-authz-unilog-consumer
+        image: eu.gcr.io/akvo-lumen/akvo-authz:$TRAVIS_COMMIT
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            cpu: ${UNILOG_CONSUMER_POD_CPU_REQUESTS}
+            memory: ${UNILOG_CONSUMER_POD_MEM_REQUESTS}
+          limits:
+            cpu: ${UNILOG_CONSUMER_POD_CPU_LIMITS}
+            memory: ${UNILOG_CONSUMER_POD_MEM_LIMITS}
+        env:
+         - name: POD_NAME
+           valueFrom:
+             fieldRef:
+               fieldPath: metadata.name
+         - name: POD_NAMESPACE
+           valueFrom:
+             fieldRef:
+               fieldPath: metadata.namespace
+         - name: APP_VERSION
+           value: $TRAVIS_COMMIT
+         - name: AUTHZ_PROFILE_TO_RUN
+           value: "authz.profile/unilog-consumer"
+         - name: ENV_NAME
+           valueFrom:
+             configMapKeyRef:
+               name: akvo
+               key: environment
+         - name: AUTHZ_DATABASE_URL
+           valueFrom:
+             secretKeyRef:
+               name: akvo-authz
+               key: authz-database-url
+         - name: UNILOG_DATABASE_HOST
+           valueFrom:
+             secretKeyRef:
+               name: akvo-authz
+               key: unilog-database-host
+         - name: UNILOG_DATABASE_NAME
+           valueFrom:
+             secretKeyRef:
+               name: akvo-authz
+               key: unilog-database-name
+         - name: UNILOG_DATABASE_USER
+           valueFrom:
+             secretKeyRef:
+               name: akvo-authz
+               key: unilog-database-user
+         - name: UNILOG_DATABASE_PASSWORD
+           valueFrom:
+             secretKeyRef:
+               name: akvo-authz
+               key: unilog-database-password
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          initialDelaySeconds: 90
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+          initialDelaySeconds: 90
