@@ -21,7 +21,7 @@
   (eftest/run-tests (eftest/find-tests "test")))
 
 (def profiles
-  [:duct.profile/dev :duct.profile/local])
+  [:duct.profile/dev :duct.profile/local :authz.profile/api :authz.profile/unilog-consumer])
 
 (clojure.tools.namespace.repl/set-refresh-dirs "dev/src" "src" "test")
 

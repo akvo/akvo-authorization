@@ -5,6 +5,7 @@ services:
     environment:
       - WAIT_FOR_DEPS=true
       - NREPL_BIND_HOST=0.0.0.0
+      - AUTHZ_PROFILE_TO_RUN=:authz.profile/api
     volumes:
       - ./backend/dev:/app/dev
 #      - ./dev/dev-config.edn:/etc/config/akvo-unilog/config.edn
