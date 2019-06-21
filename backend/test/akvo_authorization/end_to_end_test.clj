@@ -49,9 +49,13 @@
     :body
     set))
 
-(defn get-valid-event-stat []
-  (let [stats (->>
-                (http/get "http://authz:3000/metrics")
+(defn prod-like-env []
+  (= "true" (System/getenv "PROD_LIKE_ENV")))
+
+(defn get-valid-event-stat [& [host]]
+  (let [unilog-consumer-host (or host (if (prod-like-env) "authz-consumer" "authz"))
+        stats (->>
+                (http/get (str "http://" unilog-consumer-host ":3000/metrics"))
                 :body
                 (str/split-lines)
                 (filter (fn [x] (str/starts-with? x "event_valid{db_name=\"u_unilog_events")))
@@ -74,10 +78,14 @@
         =eventually-in=>
         #{survey-full-id})
 
-      (is (= (get-valid-event-stat) (+ valid-events-stat-before (count entities)))))))
+      (is (= (get-valid-event-stat) (+ valid-events-stat-before (count entities))))
+      (when (prod-like-env)
+        (is (= 0 (get-valid-event-stat "authz")))))))
 
 (deftest health-check
-  (is (= 200 (:status (http/get "http://authz:3000/healthz")))))
+  (is (= 200 (:status (http/get "http://authz:3000/healthz"))))
+  (when (prod-like-env)
+    (is (= 200 (:status (http/get "http://authz-consumer:3000/healthz"))))))
 
 (deftest returns-useful-error-on-validation []
   (let [response (try

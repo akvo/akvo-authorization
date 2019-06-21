@@ -5,10 +5,25 @@ services:
     environment:
       - WAIT_FOR_DEPS=true
       - NREPL_BIND_HOST=0.0.0.0
-      - AUTHZ_PROFILE_TO_RUN=:authz.profile/api
+      - AUTHZ_PROFILE_TO_RUN=authz.profile/api
     volumes:
       - ./backend/dev:/app/dev
 #      - ./dev/dev-config.edn:/etc/config/akvo-unilog/config.edn
+    image: "eu.gcr.io/${PROJECT_NAME}/akvo-authz:$TRAVIS_COMMIT"
+
+  authz-consumer:
+    environment:
+      - WAIT_FOR_DEPS=true
+      - AUTHZ_PROFILE_TO_RUN=authz.profile/unilog-consumer
+      - PGSSLROOTCERT=/pg-certs/server.crt
+      - UNILOG_DATABASE_NAME=u_unilog_events
+      - UNILOG_DATABASE_HOST=postgres
+      - UNILOG_DATABASE_USER=uniloguser
+      - UNILOG_DATABASE_PASSWORD=uniloguserpassword
+      - AUTHZ_DATABASE_URL=jdbc:postgresql://postgres/authzdb?user=authzuser&password=authzpasswd&ssl=true
+    volumes:
+      - pg-data:/pg-certs:ro
+      - ./backend/dev:/app/dev
     image: "eu.gcr.io/${PROJECT_NAME}/akvo-authz:$TRAVIS_COMMIT"
 
   tests:
@@ -22,6 +37,7 @@ services:
       - authz
     command: "true"
     environment:
+      - PROD_LIKE_ENV=true
       - PGSSLROOTCERT=/pg-certs/server.crt
       - UNILOG_DATABASE_NAME=u_unilog_events
       - UNILOG_DATABASE_HOST=postgres
