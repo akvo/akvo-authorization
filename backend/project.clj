@@ -24,7 +24,8 @@
             [lein-eftest "0.5.8"]]
   :main ^:skip-aot akvo-authorization.main
   :resource-paths ["resources" "target/resources"]
-  :prep-tasks ["javac" "compile" ["run" ":duct/compiler"]]
+  :prep-tasks ["javac" "compile"                            ;["run" ":duct/compiler"]
+               ]
   :middleware [lein-duct.plugin/middleware]
   :uberjar-name "akvo-authz.jar"
   :profiles
