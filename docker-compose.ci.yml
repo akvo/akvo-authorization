@@ -37,7 +37,7 @@ services:
       - authz
     command: "true"
     environment:
-      - PROD_LIKE_ENV=true
+      - CI_ENV=true
       - PGSSLROOTCERT=/pg-certs/server.crt
       - UNILOG_DATABASE_NAME=u_unilog_events
       - UNILOG_DATABASE_HOST=postgres

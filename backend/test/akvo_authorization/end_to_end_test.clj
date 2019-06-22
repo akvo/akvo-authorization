@@ -52,11 +52,8 @@
     :body
     set))
 
-(defn prod-like-env []
-  (= "true" (System/getenv "PROD_LIKE_ENV")))
-
 (defn get-stat [stat & [host]]
-  (let [unilog-consumer-host (or host (if (prod-like-env) "authz-consumer" "authz"))
+  (let [unilog-consumer-host (or host (if (tu/in-CI-env?) "authz-consumer" "authz"))
         stats (->>
                 (http/get (str "http://" unilog-consumer-host ":3000/metrics"))
                 :body
@@ -102,12 +99,12 @@
 
       (is (= (get-valid-event-stat) (+ valid-events-stat-before (count entities))))
       (is (> (get-unilog-offset-stat) unilog-offset-before))
-      (when (prod-like-env)
+      (when (tu/in-CI-env?)
         (is (= 0 (get-valid-event-stat "authz")))))))
 
 (deftest health-check
   (is (= 200 (:status (http/get "http://authz:3000/healthz"))))
-  (when (prod-like-env)
+  (when (tu/in-CI-env?)
     (is (= 200 (:status (http/get "http://authz-consumer:3000/healthz"))))))
 
 (deftest returns-useful-error-on-validation []

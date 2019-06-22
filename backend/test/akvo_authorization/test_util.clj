@@ -207,8 +207,13 @@
     (with-open [_ (Socket. host (int port))]
       true)))
 
+(defn in-CI-env? []
+  (= "true" (System/getenv "CI_ENV")))
+
 (defn check-servers-are-up [f]
   (wait-for-server "authz" 3000)
+  (when (in-CI-env?)
+    (wait-for-server "authz-consumer" 3000))
   (f))
 
 (comment
