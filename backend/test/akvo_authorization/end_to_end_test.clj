@@ -3,12 +3,15 @@
             [clojure.java.jdbc :as jdbc]
             [akvo-authorization.unilog.consumer :as consumer]
             [testit.core :as it :refer [=in=> fact => =eventually-in=> =throws=>]]
+            [akvo-authorization.flow-config.parsing-test :as flow-config-test]
             [testit.eventually :as eventually]
             [clj-http.client :as http]
             [akvo-authorization.test-util :as tu]
             [jsonista.core :as json]
-            [clojure.string :as str])
-  (:import (org.postgresql.util PGobject)))
+            [clojure.string :as str]
+            [clojure.java.io :as io])
+  (:import (org.postgresql.util PGobject)
+           (java.io File)))
 
 (def unilog-db (consumer/event-log-spec {:event-log-server "postgres"
                                          :event-log-port 5432
@@ -69,6 +72,15 @@
 (defn get-valid-event-stat [& [host]]
   (get-stat "event_valid{db_name=\"u_unilog_events" host))
 
+(defn update-flow-alias-config [flow-instance-alias]
+  (io/copy
+    (flow-config-test/with-content
+      ["folder/appengine-web.xml"
+       (flow-config-test/flow-config
+         (tu/flow-instance-with-test-id :instance1)
+         (str flow-instance-alias ".akvofoo.org"))])
+    (File. "/app/fake-github/repos/akvo/akvo-flow-server-config/zipball/master")))
+
 (deftest end-to-end
   (binding [eventually/*eventually-timeout-ms* 10000
             eventually/*eventually-polling-ms* 100]
@@ -77,8 +89,11 @@
           entities (insert-in-unilog-db [:instance1 {:auth 1}
                                          [:survey1#survey]])
           survey (tu/find-node entities :survey1)
-          survey-full-id {:instance_id (tu/flow-instance-with-test-id :instance1)
+          flow-instance-alias (str "an-" (tu/flow-instance-with-test-id :instance1) "-alias")
+          survey-full-id {:instance_id flow-instance-alias
                           :survey_id (str (:id survey))}]
+
+      (update-flow-alias-config flow-instance-alias)
 
       (fact
         (check-perms (tu/email :user1) [survey-full-id])

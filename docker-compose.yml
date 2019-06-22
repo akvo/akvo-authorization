@@ -16,5 +16,17 @@ services:
       - UNILOG_DATABASE_USER=uniloguser
       - UNILOG_DATABASE_PASSWORD=uniloguserpassword
       - AUTHZ_DATABASE_URL=jdbc:postgresql://postgres/authzdb?user=authzuser&password=authzpasswd&ssl=true
+      - GITHUB_HOST=http://fake-github:5000
+      - GITHUB_TOKEN=any
+      - GITHUB_REFRESH_EVERY_SECS=2
+    depends_on:
+      - fake-github
+  fake-github:
+    build: fake-github
+    entrypoint: sh -c "mkdir -p /html/repos/akvo/akvo-flow-server-config/zipball/ && cp /html/initial-github-config.zip /html/repos/akvo/akvo-flow-server-config/zipball/master && /http-server"
+    ports:
+      - 5000:5000
+    volumes:
+      - ./backend/fake-github:/html
 volumes:
   pg-data:

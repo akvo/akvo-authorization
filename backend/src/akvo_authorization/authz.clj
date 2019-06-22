@@ -15,11 +15,12 @@
   (let [user-id (:id (get-user-by-email db {:email email}))]
     (get-all-surveys-for-user db {:user-id user-id})))
 
-(defn filter-surveys [allowed-surveys queried-surveys]
-  (let [queried (reduce
+(defn filter-surveys [allowed-surveys queried-surveys flow-aliases]
+  (let [aliases @flow-aliases
+        queried (reduce
                   (fn [so-far {:keys [instance_id survey_id] :as queried-survey}]
                     (assoc so-far
-                      [instance_id (Long/parseLong survey_id)]
+                      [(get aliases instance_id instance_id) (Long/parseLong survey_id)]
                       queried-survey))
                   {}
                   queried-surveys)]
@@ -36,7 +37,7 @@
 (s/def ::full-survey-id (s/keys :req-un [::survey_id ::instance_id]))
 (def survey-list-spec (s/coll-of ::full-survey-id))
 
-(defn surveys [db email body]
+(defn surveys [db flow-aliases email body]
   (if-not (s/valid? survey-list-spec body)
     (ring-util/bad-request
       {:problems (mapv (fn [problem]
@@ -46,12 +47,12 @@
                    (::s/problems (s/explain-data survey-list-spec body)))})
     (->
       (find-all-surveys db email)
-      (filter-surveys body)
+      (filter-surveys body flow-aliases)
       ring-util/response)))
 
-(defn endpoint* [db]
+(defn endpoint* [db flow-aliases]
   (POST "/check_permissions" {:keys [email body-params]}
-    (surveys db email body-params)))
+    (surveys db flow-aliases email body-params)))
 
-(defmethod ig/init-key ::endpoint [_ {:keys [db]}]
-  (endpoint* (:spec db)))
+(defmethod ig/init-key ::endpoint [_ {:keys [db flow-aliases]}]
+  (endpoint* (:spec db) flow-aliases))

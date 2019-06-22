@@ -42,12 +42,22 @@
                                                  :maximum-pool-size 5
                                                  :jdbc-url #duct/env "AUTHZ_DATABASE_URL"}
 
-  :akvo-authorization.authz/endpoint {:db #ig/ref :authz/authz-db}
+  :akvo-authorization.authz/endpoint {:db #ig/ref :authz/authz-db
+                                      :flow-aliases #ig/ref :akvo-authorization.flow-config.github/flow-aliases}
 
   :duct.handler/root
   {:middleware ^:distinct [#ig/ref :akvo-authorization.handler.email/wrap-email]}
 
   :akvo-authorization.handler.email/wrap-email {}
+
+  :akvo-authorization.flow-config.github/flow-aliases {}
+
+  :akvo-authorization.flow-config.github/start-cron
+  {:metrics-collector #ig/ref :akvo-authorization.handler.monitoring/collector
+   :alias-config-atom #ig/ref :akvo-authorization.flow-config.github/flow-aliases
+   :refresh-every-secs #duct/env ["GITHUB_REFRESH_EVERY_SECS" Int :or 900]
+   :github-host #duct/env ["GITHUB_HOST" :or "https://api.github.com"]
+   :github-token #duct/env "GITHUB_TOKEN"}
   }
 
  :duct.profile/dev #duct/include "dev"

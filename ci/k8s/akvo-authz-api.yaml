@@ -55,6 +55,11 @@ spec:
              secretKeyRef:
                name: akvo-authz
                key: authz-database-url
+         - name: GITHUB_TOKEN
+           valueFrom:
+             secretKeyRef:
+               name: akvo-authz
+               key: github-auth-token
         livenessProbe:
           httpGet:
             path: /healthz

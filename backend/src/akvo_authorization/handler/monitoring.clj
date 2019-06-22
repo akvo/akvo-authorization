@@ -35,6 +35,10 @@
                                              :labels [:db-name]})
       (prometheus/gauge :event/last-start {:description "Timestamp of last unilog consumer run start time"
                                            :labels [:db-name]})
+      (prometheus/gauge :flow-config-load/last-start {:description "Last start of the flow-config-reload"})
+      (prometheus/gauge :flow-config-load/last-run {:description "Last finish time of the flow-config-reload"})
+      (prometheus/gauge :flow-config-load/last-failure {:description "Last failure time of the flow-config-reload"})
+      (prometheus/gauge :flow-config-load/last-success {:description "Last success time of the flow-config-reload"})
       (prometheus/histogram
         :event/tenant-duration
         {:description "Time taken to process a tenant"

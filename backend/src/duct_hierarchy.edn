@@ -1,4 +1,5 @@
 {:akvo-authorization.unilog.consumer/start-cron [:duct/daemon]
+ :akvo-authorization.flow-config.github/start-cron [:duct/daemon]
  :akvo-authorization.util.nrepl/nrepl [:duct/daemon]
  :authz.profile/api [:duct/profile]
  :authz.profile/unilog-consumer [:duct/profile]}
