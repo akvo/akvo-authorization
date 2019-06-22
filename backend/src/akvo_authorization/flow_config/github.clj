@@ -20,6 +20,8 @@
 (defn github-contents [auth-token]
   (http/get (str github-url "/repos/akvo/akvo-flow-server-config/zipball/master")
     {:as :stream
+     :socket-timeout 60000
+     :connection-timeout 10000
      :headers (headers auth-token)}))
 
 (defn find-tag [xml to-find]
