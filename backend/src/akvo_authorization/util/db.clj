@@ -1,4 +1,4 @@
-(ns akvo-authorization.db-utils
+(ns akvo-authorization.util.db
   (:require [integrant.core :as ig]
             [clojure.java.jdbc :as jdbc]
             ragtime.jdbc

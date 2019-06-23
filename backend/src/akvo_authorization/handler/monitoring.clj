@@ -6,7 +6,7 @@
             [iapetos.collector.exceptions :as ex]
             [iapetos.registry :as registry]
             [hugsql-adapter-case.adapters :as adapter-case]
-            akvo-authorization.db-utils
+            akvo-authorization.util.db
             [hugsql.core :as hugsql]
             [hugsql.adapter :as adapter]
             [iapetos.core :as prometheus]

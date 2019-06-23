@@ -3,7 +3,7 @@
             [clojure.set :refer [rename-keys]]
             [clojure.java.jdbc :as jdbc]
             [taoensso.nippy :as nippy]
-            [akvo-authorization.db-utils :refer [->ltree]]
+            [akvo-authorization.util.db :refer [->ltree]]
             [clojure.string :as str]))
 
 (hugsql/def-db-fns "sql/nodes.sql")

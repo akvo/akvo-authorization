@@ -1,7 +1,7 @@
 (ns akvo-authorization.main
   (:gen-class)
   (:require [duct.core :as duct]
-            akvo-authorization.db-utils))
+            akvo-authorization.util.db))
 
 (duct/load-hierarchy)
 
