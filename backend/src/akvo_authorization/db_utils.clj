@@ -2,8 +2,12 @@
   (:require [integrant.core :as ig]
             [clojure.java.jdbc :as jdbc]
             ragtime.jdbc
-            [jsonista.core :as json])
+            [jsonista.core :as json]
+            [hugsql-adapter-case.adapters :as adapter-case]
+            [hugsql.core :as hugsql])
   (:import (org.postgresql.util PGobject)))
+
+(hugsql/set-adapter! (adapter-case/kebab-adapter))
 
 (defmethod ig/init-key ::migration [_ config]
   (ragtime.jdbc/load-resources "migrations"))
