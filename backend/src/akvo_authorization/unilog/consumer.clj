@@ -12,7 +12,7 @@
             [iapetos.core :as prometheus])
   (:import (java.util.concurrent Executors TimeUnit)))
 
-(hugsql/def-db-fns "sql/offsets.sql")
+(hugsql/def-db-fns "sql/consumer.sql")
 
 (defn event-log-spec [config]
   (assert (not (empty? config)) "Config map is empty")
@@ -35,14 +35,14 @@
 
 (defn unilog-dbs [db db-prefix]
   (->>
-    (jdbc/query db ["SELECT datname FROM pg_database WHERE datistemplate = false"])
+    (get-database-names db)
     (map :datname)
     (filter (fn [db-name] (str/starts-with? db-name db-prefix)))
     set))
 
 (defn record-number-of-queued-messages [{:keys [authz-db metrics-collector]} flow-instance]
   (prometheus/set metrics-collector :event/queued-up {:flow-instance flow-instance}
-    (:count (first (jdbc/query authz-db ["select count(*) as count from process_later_messages where flow_instance=?" flow-instance])))))
+    (:count (count-pending-for-flow-instance authz-db {:flow-instance flow-instance}))))
 
 (defn increment-metric-counter [metrics-collector db-name metric]
   (fn [x]
