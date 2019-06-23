@@ -7,6 +7,8 @@ services:
     build:
       context: backend
       dockerfile: dev/Dockerfile-dev
+    environment:
+      - SKIP_AUTHZ_METRICS_REGISTRATION=true
     volumes:
       - ./backend:/app
       - ~/.m2:/root/.m2

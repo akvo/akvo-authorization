@@ -52,6 +52,14 @@
     :body
     set))
 
+(defn get-stats [stat & [host]]
+  (let [unilog-consumer-host (or host (if (tu/in-CI-env?) "authz-consumer" "authz"))]
+    (->>
+      (http/get (str "http://" unilog-consumer-host ":3000/metrics"))
+      :body
+      (str/split-lines)
+      (filter (fn [x] (str/starts-with? x stat))))))
+
 (defn get-stat [stat & [host]]
   (let [unilog-consumer-host (or host (if (tu/in-CI-env?) "authz-consumer" "authz"))
         stats (->>
@@ -97,8 +105,13 @@
         =eventually-in=>
         #{survey-full-id})
 
+      ;; Checking varies Prometheus metrics
       (is (= (get-valid-event-stat) (+ valid-events-stat-before (count entities))))
       (is (> (get-unilog-offset-stat) unilog-offset-before))
+      (is (not-empty (get-stats "sql_run_duration_bucket")))
+      (is (not-empty (get-stats "sql_run_duration_bucket" "authz")))
+      (is (not-empty (get-stats "hikaricp_")))
+      (is (not-empty (get-stats "hikaricp_" "authz")))
       (when (tu/in-CI-env?)
         (is (= 0 (get-valid-event-stat "authz")))))))
 
