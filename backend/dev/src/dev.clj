@@ -31,7 +31,7 @@
 (integrant.repl/set-prep! #(duct/prep-config (read-config) profiles))
 
 (defn local-db []
-  (:spec (get integrant.repl.state/system [:duct.database.sql/hikaricp :authz/authz-db])))
+  (:spec (get integrant.repl.state/system [:akvo-authorization.handler.monitoring/hikaricp :authz/authz-db])))
 
 (comment
 
