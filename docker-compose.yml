@@ -19,6 +19,7 @@ services:
       - GITHUB_HOST=http://fake-github:5000
       - GITHUB_TOKEN=any
       - GITHUB_REFRESH_EVERY_SECS=2
+      - SENTRY_DSN=http://a-sentry-key:a-sentry-secret@wiremock-proxy:8080/sentry/213123
     depends_on:
       - fake-github
   fake-github:
@@ -28,5 +29,11 @@ services:
       - 5000:5000
     volumes:
       - ./backend/fake-github:/html
+  wiremock-proxy:
+    image: rodolpheche/wiremock:2.16.0-alpine
+    volumes:
+      - ./wiremock:/etc/wiremock/files
+    command: --root-dir /etc/wiremock/files --no-request-journal --verbose
+
 volumes:
   pg-data:

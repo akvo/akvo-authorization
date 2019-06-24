@@ -17,3 +17,6 @@ services:
     ports:
       - "47480:47480"
       - "3000:3000"
+  wiremock-proxy:
+    ports:
+      - 8081:8080

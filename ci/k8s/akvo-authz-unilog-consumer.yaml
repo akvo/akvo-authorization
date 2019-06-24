@@ -75,6 +75,11 @@ spec:
              secretKeyRef:
                name: akvo-authz
                key: unilog-database-password
+         - name: SENTRY_DSN
+           valueFrom:
+             secretKeyRef:
+               name: akvo-authz
+               key: sentry-dsn
         livenessProbe:
           httpGet:
             path: /healthz

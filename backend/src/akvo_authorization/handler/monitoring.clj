@@ -10,7 +10,9 @@
             [hugsql.core :as hugsql]
             [hugsql.adapter :as adapter]
             [iapetos.core :as prometheus]
-            [iapetos.collector.exceptions :as ex])
+            [iapetos.collector.exceptions :as ex]
+            [taoensso.timbre :as timbre]
+            [taoensso.timbre.appenders.3rd-party.sentry :as sentry])
   (:import (com.zaxxer.hikari.metrics.prometheus PrometheusMetricsTrackerFactory)))
 
 (defn wrap-health-check
@@ -130,6 +132,16 @@
 
   hikari-cp)
 
+
+(defmethod ig/init-key ::sentry-logger [_ {:keys [dsn version host env]}]
+  (assert dsn)
+  (timbre/handle-uncaught-jvm-exceptions!)
+  (-> (sentry/sentry-appender dsn
+        {:environment env
+         :release version
+         :event-fn (fn [event]
+                     (assoc event :server_name host))})
+    (assoc :min-level :error)))
 
 (comment
   (println

@@ -21,6 +21,7 @@ services:
       - UNILOG_DATABASE_USER=uniloguser
       - UNILOG_DATABASE_PASSWORD=uniloguserpassword
       - AUTHZ_DATABASE_URL=jdbc:postgresql://postgres/authzdb?user=authzuser&password=authzpasswd&ssl=true
+      - SENTRY_DSN=http://a-sentry-key:a-sentry-secret@wiremock-proxy:8080/sentry/213123
     volumes:
       - pg-data:/pg-certs:ro
       - ./backend/dev:/app/dev

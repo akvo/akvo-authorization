@@ -60,6 +60,11 @@ spec:
              secretKeyRef:
                name: akvo-authz
                key: github-auth-token
+         - name: SENTRY_DSN
+           valueFrom:
+             secretKeyRef:
+               name: akvo-authz
+               key: sentry-dsn
         livenessProbe:
           httpGet:
             path: /healthz

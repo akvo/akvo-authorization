@@ -9,6 +9,13 @@
 
   :akvo-authorization.util.nrepl/nrepl {:bind #duct/env ["NREPL_BIND_HOST" :or "127.0.0.1"]
                                         :port #duct/env ["NREPL_PORT" Int :or 47889]}
+
+  :akvo-authorization.handler.monitoring/sentry-logger
+  {:dsn #duct/env "SENTRY_DSN"
+   :env #duct/env "ENV_NAME"
+   :host #duct/env "POD_NAME"
+   :version #duct/env "APP_VERSION"}
+
   }
 
  :authz.profile/unilog-consumer
@@ -75,9 +82,16 @@
    :github-token #duct/env "GITHUB_TOKEN"}
   }
 
- :duct.profile/dev #duct/include "dev"
+ :duct.profile/dev
+ {:duct.logger/timbre
+  {:appenders {:spit #ig/ref :duct.logger.timbre/spit
+               :brief #ig/ref :duct.logger.timbre/brief
+               :sentry #ig/ref :akvo-authorization.handler.monitoring/sentry-logger}}}
  :duct.profile/local #duct/include "local"
- :duct.profile/prod {}
+ :duct.profile/prod
+ {:duct.logger/timbre
+  {:appenders {:sentry #ig/ref :akvo-authorization.handler.monitoring/sentry-logger
+               :out #ig/ref :duct.logger.timbre/println}}}
 
  :duct.module/logging {}
  :duct.module.web/api
