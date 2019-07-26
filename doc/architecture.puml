@@ -1,0 +1,44 @@
+@startuml
+
+artifact db as "ElephantDB authz cluster" {
+    node authzdb as "authz DB"
+}
+
+artifact db2 as "ElephantDB unilog cluster" {
+
+    node unilog2 as "u_akvoflow-2"
+    node unilog3 as "..."
+    node unilog1 as "u_akvoflow-1"
+}
+
+artifact api_pod as "API pod (multiple pods)" {
+
+    node kc as "nginx keycloak"
+    node auth0 as "nginx auth0"
+
+    node api as "api"
+
+    api --> authzdb
+
+    auth0 -[#00FF00]-> api
+    kc -[#0000FF]-> api
+
+}
+
+artifact consumer_pod as "Consumer pod" {
+    node consumer as "Unilog consumer"
+    consumer --> authzdb
+    consumer --> unilog1
+    consumer --> unilog2
+    consumer --> unilog3
+}
+
+actor browser
+node ingress as "Avko ingress"
+browser -[#0000FF]-> ingress : https://authz.akvo.org/....
+browser -[#00FF00]-> ingress : https://authz-auth0.akvo.org/....
+ingress -[#0000FF]-> kc : authz-auth0.akvo.org
+ingress -[#00FF00]-> auth0 : authz-auth0.akvo.org
+
+
+@enduml
