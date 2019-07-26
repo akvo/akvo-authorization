@@ -6,9 +6,9 @@ artifact db as "ElephantDB authz cluster" {
 
 artifact db2 as "ElephantDB unilog cluster" {
 
+    node unilog1 as "u_akvoflow-1"
     node unilog2 as "u_akvoflow-2"
     node unilog3 as "..."
-    node unilog1 as "u_akvoflow-1"
 }
 
 artifact api_pod as "API pod (multiple pods)" {
