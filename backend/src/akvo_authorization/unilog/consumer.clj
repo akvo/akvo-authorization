@@ -50,12 +50,12 @@
     x))
 
 (defn event-delay [event]
-  (let [delay (some->> event :payload :context :timestamp)
+  (let [event-time (some->> event :payload :context :timestamp)
         current-time (System/currentTimeMillis)]
     (and
-      (pos-int? delay)
-      (> current-time delay)
-      delay)))
+      (pos-int? event-time)
+      (> current-time event-time)
+      (- current-time event-time))))
 
 (defn metrics-delay-per-event-type [metrics-collector db-name]
   (fn [x]
