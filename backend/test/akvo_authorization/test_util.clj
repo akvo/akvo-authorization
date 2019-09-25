@@ -6,7 +6,9 @@
             [akvo-authorization.unilog.spec :as unilog-spec]
             hikari-cp.core
             [testit.core :as it :refer [=in=> fact =>]]
-            [clojure.string :as str])
+            [clojure.string :as str]
+            [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen])
   (:import (java.net Socket)))
 
 (defonce local-db {:datasource (hikari-cp.core/make-datasource {:minimum-idle 0
@@ -91,6 +93,7 @@
         value {:id idx
                :payload {:eventType eventType
                          :orgId (name flow-instance)
+                         :context (gen/generate (s/gen ::unilog-spec/context))
                          :entity (fix-entity-fn entity)}}]
     (when-not (unilog-spec/valid? value)
       (unilog-spec/explain value)
