@@ -46,6 +46,11 @@
       (prometheus/gauge :event/last-start {:description "Timestamp of last unilog consumer run start time"
                                            :labels [:db-name]})
       (prometheus/histogram
+        :event/delay
+        {:description "Event delay since it was created in Flow"
+         :labels [:db-name :event-type]
+         :buckets [1000, 3000, 10000, 30000, 60000, (* 10 60000), (* 15 60000)]})
+      (prometheus/histogram
         :event/tenant-duration
         {:description "Time taken to process a tenant"
          :labels [:db-name]

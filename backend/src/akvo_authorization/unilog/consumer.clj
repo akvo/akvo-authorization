@@ -49,6 +49,24 @@
     (prometheus/inc metrics-collector metric {:db-name db-name})
     x))
 
+(defn event-delay [event]
+  (let [delay (some->> event :payload :context :timestamp)
+        current-time (System/currentTimeMillis)]
+    (and
+      (pos-int? delay)
+      (> current-time delay)
+      delay)))
+
+(defn metrics-delay-per-event-type [metrics-collector db-name]
+  (fn [x]
+    (when-let [delay (event-delay x)]
+      (prometheus/observe
+        metrics-collector
+        :event/delay
+        {:db-name db-name :event-type (-> x :payload :eventType)}
+        delay))
+    x))
+
 (defn process-new-events [{:keys [authz-db metrics-collector] :as config} db-name reducible]
   (let [last-unilog-id (atom nil)
         store-offset! (fn []
@@ -68,6 +86,7 @@
                    (map (increment-metric-counter metrics-collector db-name :event/correct-type))
                    (filter akvo-authorization.unilog.spec/valid?)
                    (map (increment-metric-counter metrics-collector db-name :event/valid))
+                   (map (metrics-delay-per-event-type metrics-collector db-name))
                    (partition-all 1000))]
     (transduce
       pipeline

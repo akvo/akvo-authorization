@@ -58,9 +58,18 @@
     (str kind "Created")
     (str kind "Deleted")})
 
+(s/def ::context (s/keys :opt-un [::timestamp]))
+(s/def ::timestamp
+  (s/with-gen nat-int? #(gen/fmap
+                          (fn [x]
+                            (if (zero? x)
+                              x
+                              (- (System/currentTimeMillis) (* 1000 x))))
+                          (s/gen int?))))
+
 (s/def ::eventType (set (mapcat types-for ["surveyGroup" "user" "userAuthorization" "userRole"])))
 (s/def ::entity map?)
-(s/def ::payload (s/keys :req-un [::eventType ::entity ::orgId]))
+(s/def ::payload (s/keys :req-un [::eventType ::entity ::orgId] :opt-un [::context]))
 (s/def ::event (s/keys :req-un [::id ::payload]))
 
 (defn valid? [m]
@@ -92,6 +101,7 @@
   (valid? {:id 1
            :payload {:orgId "h"
                      :eventType "userCreated"
+                     :context {:timestamp 0}
                      :entity {:id 12
                               :language "x"
                               :permissionList "10"
