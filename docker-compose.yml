@@ -20,6 +20,7 @@ services:
       - GITHUB_TOKEN=any
       - GITHUB_REFRESH_EVERY_SECS=2
       - SENTRY_DSN=http://a-sentry-key:a-sentry-secret@wiremock-proxy:8080/sentry/213123
+      - CONSUMER_PARALLELISM=5
     depends_on:
       - fake-github
   fake-github:
