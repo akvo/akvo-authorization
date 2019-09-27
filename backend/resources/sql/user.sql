@@ -14,6 +14,10 @@ RETURNING id
 SELECT * from users
 WHERE email = :email
 
+-- :name get-flow-user-by-email :? :1
+SELECT * from users_flow_ids
+WHERE flow_id = :flow-id AND flow_instance = :flow-instance
+
 -- :name upsert-user-flow-id! :i :n
 INSERT INTO users_flow_ids (user_id, email, flow_instance, flow_id, super_admin, permission_list)
 VALUES (:user-id, :email, :flow-instance, :flow-id, :super-admin, :permission-list)

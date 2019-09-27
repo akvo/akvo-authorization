@@ -34,9 +34,9 @@
 
 (defn upsert-entity [flow-instance [type entity :as type-entity-pair]]
   (unilog/process tu/local-db [(tu/->unilog
-                                    (tu/flow-instance-with-test-id flow-instance)
-                                    (rand-int 10000000)
-                                    type-entity-pair)]))
+                                 (tu/flow-instance-with-test-id flow-instance)
+                                 (rand-int 10000000)
+                                 type-entity-pair)]))
 
 (defn move-node-under [entities flow-instance entity-to-move to-entity]
   (let [node-to-move (tu/find-node entities entity-to-move)
@@ -187,6 +187,25 @@
       false any any nil flow-root
       false any any any any
       )))
+
+(defn allowed-objs [flow-instance flow-user-id]
+  (authz/find-allowed-objects tu/local-db
+    (tu/flow-instance-with-test-id flow-instance)
+    flow-user-id))
+
+(deftest allowed-objs-test
+  (let [entities (add-authz [:uat-instance {:auth 3}
+                             [:folder-1 {:auth 2}
+                              [:survey1#survey {:auth 2}]]])
+        admin-user (create-admin :uat-instance :user1)]
+    (is (= {:isSuperAdmin true} (allowed-objs :uat-instance (:id admin-user))))
+    (is (= {:isSuperAdmin false
+              :securedObjectIds #{(:id (tu/find-node entities :folder-1))
+                                  (:id (tu/find-node entities :survey1))}}
+            (allowed-objs :uat-instance (:id (tu/find-user entities :user2)))))
+    (is (= {:isSuperAdmin false
+            :securedObjectIds #{0}}
+          (allowed-objs :uat-instance (:id (tu/find-user entities :user3)))))))
 
 (comment
 

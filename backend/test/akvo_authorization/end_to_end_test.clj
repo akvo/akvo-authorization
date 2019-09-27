@@ -46,6 +46,13 @@
      :form-params surveys
      :content-type :json}))
 
+(defn allowed-objects [flow-instance user]
+  (:body (http/get "http://authz:3000/poc"
+           {:as :json
+            :query-params {:flowUserId (:id user)
+                           :flowInstance flow-instance}
+            :content-type :json})))
+
 (defn check-perms [user surveys]
   (->
     (check-perms* user surveys)
@@ -104,6 +111,11 @@
         (check-perms (tu/email :user1) [survey-full-id])
         =eventually-in=>
         #{survey-full-id})
+
+      (fact
+        (allowed-objects (tu/flow-instance-with-test-id :instance1) (tu/find-user entities :user1))
+        =eventually-in=>
+        {:securedObjectIds [0]})
 
       ;; Checking varies Prometheus metrics
       (is (= (get-valid-event-stat) (+ valid-events-stat-before (count entities))))

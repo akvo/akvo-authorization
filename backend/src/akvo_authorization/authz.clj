@@ -4,12 +4,23 @@
             [clojure.set :refer [rename-keys]]
             [hugsql.core :as hugsql]
             [akvo-authorization.unilog.spec :as unilog-spec]
-            [compojure.core :refer [POST routes]]
+            [compojure.core :refer [POST routes GET]]
             [ring.util.response :as ring-util]
             [clojure.spec.alpha :as s]))
 
 (hugsql/def-db-fns "sql/user.sql")
 (hugsql/def-db-fns "sql/authz.sql")
+
+(defn find-allowed-objects [db flow-instance flow-user-id]
+  (let [user (get-flow-user-by-email db {:flow-id flow-user-id :flow-instance flow-instance})]
+    (if (:super-admin user)
+      {:isSuperAdmin true}
+      {:isSuperAdmin false
+       :securedObjectIds (->>
+                           (get-flow-ids-for-user-in-flow-instance db {:user-id (:user-id user)
+                                                                       :flow-instance flow-instance})
+                           (map :flow-id)
+                           set)})))
 
 (defn find-all-surveys [db email]
   (let [user-id (:id (get-user-by-email db {:email email}))]
@@ -51,8 +62,11 @@
       ring-util/response)))
 
 (defn endpoint* [db flow-aliases]
-  (POST "/check_permissions" {:keys [email body-params]}
-    (surveys db flow-aliases email body-params)))
+  (routes
+    (GET "/poc" [flowInstance flowUserId]
+      (ring-util/response (find-allowed-objects db flowInstance (Long/parseLong flowUserId))))
+    (POST "/check_permissions" {:keys [email body-params]}
+      (surveys db flow-aliases email body-params))))
 
 (defmethod ig/init-key ::endpoint [_ {:keys [db flow-aliases]}]
   (endpoint* (:spec db) flow-aliases))

@@ -13,3 +13,11 @@ WITH
                 and ufi.super_admin = true
                 and n.flow_id = 0)
 select flow_id, flow_instance, name from nodes n WHERE n.type = 'SURVEY' AND n.full_path <@ ARRAY(select * FROM PERMS)
+
+-- :name get-flow-ids-for-user-in-flow-instance :?
+select n.flow_id
+    from nodes n,
+         user_node_role unr
+    WHERE n.id = unr.node_id
+      AND unr.flow_instance = :flow-instance
+      AND unr.user_id = :user-id
