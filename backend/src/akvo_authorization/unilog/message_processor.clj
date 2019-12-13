@@ -70,7 +70,7 @@
         previous-user-flow (get-user-by-flow-id db user)]
     (upsert-user-flow-id! db (assoc user :user-id id))
     (when (and previous-user-flow (not= (:email previous-user-flow) (:email user)))
-      (change-auths-owner! db {:previous-user-id (:user-id previous-user-flow)
+      (change-auths-owner! db {:flow-user-id (:flow-id previous-user-flow)
                                :new-user-id id
                                :flow-instance (:flow-instance user)})))
   :reprocess-queue)
@@ -92,12 +92,15 @@
                                :flow-instance flow-instance
                                :user-id user-id
                                :role-id role-id
+                               :flow-user-id flow-user-id
                                :node-id (or node-id (:id (insert-root-node db flow-instance)))})
         :nothing))))
 
-(defn delete-user [db {:keys [flow-instance] :as user}]
-  (when-let [user-id (delete-user-by-flow-id! db user)]
-    (delete-user-auth! db (assoc user-id :flow-instance flow-instance)))
+(defn delete-user [db {:keys [flow-instance flow-id] :as user}]
+  (delete-user-by-flow-id! db user)
+  (delete-user-auth-by-flow-user-id! db
+    {:flow-user-id flow-id
+     :flow-instance flow-instance})
   :delete-related)
 
 (defn delete-user-auth [db user-auth]
