@@ -131,6 +131,18 @@
     (delete :user :uat-instance user)
     (is (= #{} (can-see :user1)))))
 
+(deftest two-flow-users-with-the-same-email-and-we-delete-one
+  ;; EDGE CASE
+  ;; Flow allows several users with the same email in the same instance
+  ;; If one of the flow users is deleted, we are wrongly deleting all the authorizations
+  ;; from the other flow user.
+  (let [entities (add-authz [:uat-instance {:auth [{:user-id :user1 :email :same-email}
+                                                   {:user-id :user2 :email :same-email}]}
+                             [:survey1#survey]])
+        one-of-the-flow-users (tu/find-user entities :same-email)]
+    (delete :user :uat-instance one-of-the-flow-users)
+    (is (= #{[:uat-instance :survey1]} (can-see :same-email)))))
+
 (deftest delete-user-in-a-flow-instance-does-not-affect-his-perms-in-another-instance
   (let [entities (add-authz [:uat-instance {:auth 1}
                              [:survey1#survey]])

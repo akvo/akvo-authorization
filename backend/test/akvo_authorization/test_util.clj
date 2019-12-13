@@ -57,16 +57,32 @@
   {:pre [(keyword? user-id)]}
   (str (name user-id) "@akvo.org-" *test-run-id*))
 
+(defn auth->spec-specmonstah [secure-object-id authorizations]
+  {:user (mapv (fn [{user-id :user-id simple-email :email}]
+                 [user-id {:spec-gen {:emailAddress (email simple-email)
+                                      :superAdmin false}}])
+           authorizations)
+   :user-authorization (mapv (fn [{:keys [user-id]}]
+                               [1 {:refs {:userId user-id
+                                          :securedObjectId secure-object-id}}])
+                         authorizations)})
+
+(defn single-number-to-full-authorization [n]
+  (let [user-id (keyword (str "user" n))]
+    [{:user-id user-id
+      :email user-id}]))
+
 (defn perms* [parent [node-name & [maybe-attrs & more :as all]]]
   (let [[node-name type] (str/split (name node-name) #"#")
         node-name (keyword node-name)
         next-parent (if parent node-name ::sm/omit)
-        user-auth (if (map? maybe-attrs)
-                    (let [user-id (keyword (str "user" (get maybe-attrs :auth)))]
-                      {:user [[user-id {:spec-gen {:emailAddress (email user-id)
-                                                   :superAdmin false}}]]
-                       :user-authorization [[1 {:refs {:userId user-id
-                                                       :securedObjectId next-parent}}]]}))
+        user-auth (when (map? maybe-attrs)
+                    (when-let [authorizations (get maybe-attrs :auth)]
+                      (auth->spec-specmonstah
+                        next-parent
+                        (if (number? authorizations)
+                          (single-number-to-full-authorization authorizations)
+                          authorizations))))
         children (map
                    (partial perms* next-parent)
                    (if (map? maybe-attrs) more all))]
