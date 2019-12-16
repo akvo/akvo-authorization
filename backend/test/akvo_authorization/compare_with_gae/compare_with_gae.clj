@@ -29,33 +29,21 @@
 
 (comment
 
-  (def diffs
-    (map
-      (fn [{:keys [user_id flow_id] :as u}]
-        (let [with-flow (clojure.set/difference
-                          (set
-                            (sort
-                              (gae/with-remote-api "akvoflow-uat1"
-                                (let [survey-list (doall (list-ids flow_id))]
-                                  survey-list))))
-                          #{36634000})
-              with-authz (clojure.set/difference
-                           (set
-                             (sort (map :flow-id
-                                     (akvo-authorization.authz/get-all-surveys-for-user
-                                       (dev/local-db) {:user-id user_id}))))
-                           #{20099115 109219115 20079115})]
-          (assoc
-            u
-            :with-flow with-flow
-            :with-authz with-authz
-            :same? (= with-flow with-authz))))
-      (clojure.java.jdbc/query (dev/local-db) ["select * from users_flow_ids where flow_instance=?" "akvoflow-uat1"])))
-  (def not-correct (remove :same? diffs))
-  (frequencies (map (juxt :super_admin :same?) diffs))
+  (def db {:connection-uri "jdbc:postgresql://postgres/authzdb?user=authzuser&password=authzpasswd&ssl=true"})
 
-  (take 2
-    (clojure.data/diff
-      (:with-flow (first not-correct))
-      (:with-authz (first not-correct))))
+  (check-tenant db "akvoflow-101")
+
+  (def all-tenants
+    (->>
+      (clojure.java.jdbc/query db ["select distinct(flow_instance) from users_flow_ids"])
+      (map :flow_instance)
+      (map (fn [t]
+             (println t)
+             {:tenant t
+              :errors (try
+                        (check-tenant db t)
+                        (catch Exception e e))}))))
+
+  (count all-tenants)
+
   )
