@@ -3,7 +3,8 @@
             [akvo-authorization.compare-with-gae.akvo-flow-server-config :as gae])
   (:import (com.gallatinsystems.survey.dao SurveyDAO SurveyGroupDAO)
            (com.gallatinsystems.survey.domain SurveyGroup SurveyGroup$ProjectType)
-           (com.gallatinsystems.framework.dao BaseDAO)))
+           (com.gallatinsystems.framework.dao BaseDAO)
+           (com.gallatinsystems.user.dao UserDao)))
 
 ;; The akvo-flow-server-config repo must be made available to the container. See docker-compose.yml
 ;; There are right now the know following mismatches:
