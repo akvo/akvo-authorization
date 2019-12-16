@@ -42,25 +42,26 @@ WHERE flow_id = :flow-id
 RETURNING user_id
 
 -- :name upsert-user-auth! :!
-INSERT INTO user_node_role (flow_instance, flow_id, node_id, user_id, role_id)
-VALUES (:flow-instance, :flow-id, :node-id, :user-id, :role-id)
+INSERT INTO user_node_role (flow_instance, flow_id, node_id, user_id, role_id, flow_user_id)
+VALUES (:flow-instance, :flow-id, :node-id, :user-id, :role-id, :flow-user-id)
 ON CONFLICT ON CONSTRAINT unr_flow_full_id
 DO
   UPDATE
     SET node_id = :node-id,
         user_id = :user-id,
-        role_id = :role-id
+        role_id = :role-id,
+        flow_user_id = :flow-user-id
 RETURNING *
 
 -- :name change-auths-owner! :!
 UPDATE user_node_role
 SET user_id = :new-user-id
-WHERE user_id = :previous-user-id
+WHERE flow_user_id = :flow-user-id
     AND flow_instance = :flow-instance
 
--- :name delete-user-auth! :!
+-- :name delete-user-auth-by-flow-user-id! :!
 DELETE from user_node_role
-WHERE user_id = :user-id
+WHERE flow_user_id = :flow-user-id
       AND flow_instance = :flow-instance
 
 -- :name delete-user-auth-by-flow-id! :!

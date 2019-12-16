@@ -5,5 +5,6 @@ CREATE TABLE user_node_role (
   node_id INTEGER REFERENCES nodes(id) ON DELETE CASCADE NOT NULL,
   flow_id bigint NOT NULL,
   flow_instance varchar(40) NOT NULL,
+  flow_user_id bigint NOT NULL,
   constraint unr_flow_full_id unique (flow_instance, flow_id)
 );

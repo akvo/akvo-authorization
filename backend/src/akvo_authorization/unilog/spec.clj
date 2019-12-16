@@ -34,7 +34,8 @@
                                   "PROJECT_FOLDER_UPDATE"}))
 
 (s/def ::userRole
-  (s/keys :req-un [::id ::name ::permissions]))
+  (s/keys :req-un [::id ::name]
+    :opt-un [::permissions]))
 
 (s/def ::parentId ::id)
 (s/def ::public boolean?)
