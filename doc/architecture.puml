@@ -13,30 +13,32 @@ artifact db2 as "ElephantDB unilog cluster" {
 
 artifact k8s as "k8s" {
 
-artifact api_pod as "API pod (multiple pods)" {
+    artifact api_pod as "API pod (multiple pods)" {
 
-    node kc as "nginx keycloak"
-    node auth0 as "nginx auth0"
+        node kc as "nginx keycloak"
+        node auth0 as "nginx auth0"
 
-    node api as "api"
+        node api as "api"
 
-    api --> authzdb
+        api --> authzdb
 
-    auth0 -[#00FF00]-> api
-    kc -[#0000FF]-> api
+        auth0 -[#00FF00]-> api
+        kc -[#0000FF]-> api
 
-}
-node internal as "k8s internal service
-(http://akvo-authz-api-internal)"
-internal -[#00FFFF]-> api
-}
+    }
 
-artifact consumer_pod as "Consumer pod" {
-    node consumer as "Unilog consumer"
-    consumer --> authzdb
-    consumer --> unilog1
-    consumer --> unilog2
-    consumer --> unilog3
+    node internal as "k8s internal service
+    (http://akvo-authz-api-internal)"
+    internal -[#00FFFF]-> api
+
+    artifact consumer_pod as "Consumer pod" {
+        node consumer as "Unilog consumer"
+        consumer --> authzdb
+        consumer --> unilog1
+        consumer --> unilog2
+        consumer --> unilog3
+    }
+
 }
 
 actor browser
