@@ -11,6 +11,8 @@ artifact db2 as "ElephantDB unilog cluster" {
     node unilog3 as "..."
 }
 
+artifact k8s as "k8s" {
+
 artifact api_pod as "API pod (multiple pods)" {
 
     node kc as "nginx keycloak"
@@ -23,6 +25,10 @@ artifact api_pod as "API pod (multiple pods)" {
     auth0 -[#00FF00]-> api
     kc -[#0000FF]-> api
 
+}
+node internal as "k8s internal service
+(http://akvo-authz-api-internal)"
+internal -[#00FFFF]-> api
 }
 
 artifact consumer_pod as "Consumer pod" {
