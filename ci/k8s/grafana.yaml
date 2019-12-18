@@ -23,6 +23,7 @@ data:
       "editable": true,
       "gnetId": null,
       "graphTooltip": 0,
+      "iteration": 1576628656668,
       "links": [],
       "panels": [
         {
@@ -770,12 +771,380 @@ data:
           }
         },
         {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "description": "Time that a DB connection has been in use, from the point of acquiring it from the pool, to the point returning it back.",
+          "fill": 1,
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 25
+          },
+          "id": 44,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "hideEmpty": true,
+            "max": true,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "hikaricp_connection_usage_millis{quantile=\"0.95\", pool=\"authz-pool\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{kubernetes_pod_name}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "For how long a DB connection is used (95% percentile)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "ms",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "description": "",
+          "fill": 1,
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 25
+          },
+          "id": 45,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "hideEmpty": true,
+            "max": true,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "total": false,
+            "values": true
+          },
+          "lines": false,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "percentage": false,
+          "pointradius": 2,
+          "points": true,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "hikaricp_connection_creation_millis{quantile=\"0.95\", pool=\"authz-pool\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{kubernetes_pod_name}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "How long to create a new DB connection(95% percentile)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "ms",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "description": "Time to acquire a connection from the connection pool",
+          "fill": 1,
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 25
+          },
+          "id": 46,
+          "legend": {
+            "alignAsTable": true,
+            "avg": true,
+            "current": false,
+            "hideEmpty": true,
+            "max": true,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "total": false,
+            "values": true
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "hikaricp_connection_acquired_nanos{quantile=\"0.95\", pool=\"authz-pool\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{kubernetes_pod_name}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "How long it takes to adquire a DB connection (95% percentile)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "ns",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "description": "",
+          "fill": 1,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 33
+          },
+          "id": 42,
+          "legend": {
+            "alignAsTable": true,
+            "avg": false,
+            "current": false,
+            "hideEmpty": true,
+            "hideZero": true,
+            "max": false,
+            "min": false,
+            "rightSide": true,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null as zero",
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "hikaricp_pending_threads{pool=\"authz-pool\"}",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "Pending - {{kubernetes_pod_name}}",
+              "refId": "A"
+            },
+            {
+              "expr": "hikaricp_connections{pool=\"authz-pool\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "In Pool - {{kubernetes_pod_name}}",
+              "refId": "B"
+            },
+            {
+              "expr": "hikaricp_active_connections{pool=\"authz-pool\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "Active - {{kubernetes_pod_name}}",
+              "refId": "C"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "DB connections in Pool",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
           "content": "# Consumer",
           "gridPos": {
             "h": 2,
             "w": 24,
             "x": 0,
-            "y": 25
+            "y": 41
           },
           "id": 18,
           "links": [],
@@ -797,7 +1166,7 @@ data:
             "h": 8,
             "w": 5,
             "x": 0,
-            "y": 27
+            "y": 43
           },
           "id": 19,
           "legend": {
@@ -887,7 +1256,7 @@ data:
             "h": 8,
             "w": 5,
             "x": 5,
-            "y": 27
+            "y": 43
           },
           "id": 20,
           "legend": {
@@ -981,7 +1350,7 @@ data:
             "h": 8,
             "w": 3,
             "x": 10,
-            "y": 27
+            "y": 43
           },
           "hideTimeOverride": false,
           "id": 16,
@@ -1060,7 +1429,7 @@ data:
             "h": 8,
             "w": 11,
             "x": 13,
-            "y": 27
+            "y": 43
           },
           "id": 15,
           "legend": {
@@ -1154,7 +1523,7 @@ data:
             "h": 8,
             "w": 13,
             "x": 0,
-            "y": 35
+            "y": 51
           },
           "id": 38,
           "legend": {
@@ -1239,7 +1608,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 13,
-            "y": 35
+            "y": 51
           },
           "id": 27,
           "links": [],
@@ -1321,7 +1690,7 @@ data:
             "h": 8,
             "w": 5,
             "x": 19,
-            "y": 35
+            "y": 51
           },
           "id": 26,
           "links": [],
@@ -1406,7 +1775,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 43
+            "y": 59
           },
           "id": 22,
           "legend": {
@@ -1494,7 +1863,7 @@ data:
             "h": 8,
             "w": 7,
             "x": 6,
-            "y": 43
+            "y": 59
           },
           "id": 23,
           "legend": {
@@ -1583,7 +1952,7 @@ data:
             "h": 8,
             "w": 11,
             "x": 13,
-            "y": 43
+            "y": 59
           },
           "id": 32,
           "legend": {
@@ -1678,7 +2047,7 @@ data:
             "h": 7,
             "w": 3,
             "x": 0,
-            "y": 51
+            "y": 67
           },
           "id": 34,
           "legend": {
@@ -1765,7 +2134,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 3,
-            "y": 51
+            "y": 67
           },
           "id": 29,
           "legend": {
@@ -1857,7 +2226,7 @@ data:
             "h": 7,
             "w": 13,
             "x": 0,
-            "y": 58
+            "y": 74
           },
           "id": 14,
           "legend": {
@@ -2023,7 +2392,7 @@ data:
         ]
       },
       "time": {
-        "from": "now-3h",
+        "from": "now-12h",
         "to": "now"
       },
       "timepicker": {
@@ -2054,5 +2423,5 @@ data:
       "timezone": "",
       "title": "Authz",
       "uid": "E7AGh6nWk",
-      "version": 2
+      "version": 3
     }
