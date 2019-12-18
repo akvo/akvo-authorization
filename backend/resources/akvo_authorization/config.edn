@@ -53,8 +53,8 @@
 
   [:duct.database.sql/hikaricp :authz/authz-db-no-stats]
   {:idle-timeout 300000
-   :minimum-idle 2
-   :maximum-pool-size 5
+   :minimum-idle 5
+   :maximum-pool-size 10
    :pool-name "authz-pool"
    :logger false
    :jdbc-url #duct/env "AUTHZ_DATABASE_URL"}
