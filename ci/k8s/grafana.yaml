@@ -27,23 +27,6 @@ data:
       "links": [],
       "panels": [
         {
-          "content": "## All graphs have an $interval average\n\n\n\n\n",
-          "gridPos": {
-            "h": 2,
-            "w": 24,
-            "x": 0,
-            "y": 0
-          },
-          "id": 40,
-          "links": [],
-          "mode": "markdown",
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "",
-          "transparent": true,
-          "type": "text"
-        },
-        {
           "aliasColors": {},
           "bars": true,
           "dashLength": 10,
@@ -86,7 +69,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(http_requests_total{run=\"akvo-authz\", path!=\"/healthz\"}[$interval])) by (path, method, statusClass)",
+              "expr": "sum(rate(http_requests_total{run=\"akvo-authz\", path!=\"/healthz\"}[$__interval])) by (path, method, statusClass)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -178,12 +161,12 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum(rate(http_request_latency_seconds_bucket{run=\"akvo-authz\", path!=\"/healthz\"}[$interval])) by (le,path,method,statusClass))",
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_latency_seconds_bucket{run=\"akvo-authz\", path!=\"/healthz\"}[$__interval])) by (le,path,method,statusClass))",
               "format": "time_series",
               "hide": false,
               "instant": false,
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{method}} - {{path}} - {{statusClass}}",
               "refId": "B"
             }
@@ -270,10 +253,10 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(sql_run_duration_count{run=\"akvo-authz\"}[$interval])) by (query)",
+              "expr": "sum(rate(sql_run_duration_count{run=\"akvo-authz\"}[$__interval])) by (query)",
               "format": "time_series",
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{query}}",
               "refId": "A"
             }
@@ -362,12 +345,12 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum(rate(sql_run_duration_bucket{run=\"akvo-authz\"}[$interval])) by (le,query))",
+              "expr": "histogram_quantile(0.95, sum(rate(sql_run_duration_bucket{run=\"akvo-authz\"}[$__interval])) by (le,query))",
               "format": "time_series",
               "hide": false,
               "instant": false,
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{query}}",
               "refId": "B"
             }
@@ -453,7 +436,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(sql_run_total{run=\"akvo-authz\", result=\"failure\"}[$interval]))",
+              "expr": "sum(rate(sql_run_total{run=\"akvo-authz\", result=\"failure\"}[$__interval]))",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -546,7 +529,7 @@ data:
               "expr": "container_memory_working_set_bytes{image!=\"\",name=~\"^k8s_.*\",pod_name=~\"akvo-authz-.*\", container_name!=\"akvo-authz-unilog-consumer\", container_name!=\"POD\"}",
               "format": "time_series",
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{container_name}} - {{pod_name}} ",
               "refId": "A"
             }
@@ -633,10 +616,10 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (rate (container_cpu_usage_seconds_total{image!=\"\",name=~\"^k8s_.*\",container_name!=\"POD\",pod_name=~\"akvo-authz.*\", container_name!=\"akvo-authz-unilog-consumer\",namespace=\"default\"}[$interval])) by (container_name, pod_name)",
+              "expr": "sum (rate (container_cpu_usage_seconds_total{image!=\"\",name=~\"^k8s_.*\",container_name!=\"POD\",pod_name=~\"akvo-authz.*\", container_name!=\"akvo-authz-unilog-consumer\",namespace=\"default\"}[$__interval])) by (container_name, pod_name)",
               "format": "time_series",
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{container_name}} - {{pod_name}}",
               "refId": "B"
             }
@@ -812,7 +795,7 @@ data:
             {
               "expr": "hikaricp_connection_usage_millis{quantile=\"0.95\", pool=\"authz-pool\"}",
               "format": "time_series",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{kubernetes_pod_name}}",
               "refId": "A"
             }
@@ -900,7 +883,7 @@ data:
             {
               "expr": "hikaricp_connection_creation_millis{quantile=\"0.95\", pool=\"authz-pool\"}",
               "format": "time_series",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{kubernetes_pod_name}}",
               "refId": "A"
             }
@@ -988,7 +971,7 @@ data:
             {
               "expr": "hikaricp_connection_acquired_nanos{quantile=\"0.95\", pool=\"authz-pool\"}",
               "format": "time_series",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{kubernetes_pod_name}}",
               "refId": "A"
             }
@@ -1078,21 +1061,21 @@ data:
               "expr": "hikaricp_pending_threads{pool=\"authz-pool\"}",
               "format": "time_series",
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "Pending - {{kubernetes_pod_name}}",
               "refId": "A"
             },
             {
               "expr": "hikaricp_connections{pool=\"authz-pool\"}",
               "format": "time_series",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "In Pool - {{kubernetes_pod_name}}",
               "refId": "B"
             },
             {
               "expr": "hikaricp_active_connections{pool=\"authz-pool\"}",
               "format": "time_series",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "Active - {{kubernetes_pod_name}}",
               "refId": "C"
             }
@@ -1199,7 +1182,7 @@ data:
               "expr": "container_memory_working_set_bytes{image!=\"\",name=~\"^k8s_.*\",pod_name=~\"akvo-authz-unilog.*\", container_name!=\"POD\"}",
               "format": "time_series",
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{pod_name}} ",
               "refId": "A"
             }
@@ -1286,10 +1269,10 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (rate (container_cpu_usage_seconds_total{image!=\"\",name=~\"^k8s_.*\",container_name!=\"POD\",pod_name=~\"akvo-authz-unilog.*\",namespace=\"default\"}[$interval])) by (container_name, pod_name)",
+              "expr": "sum (rate (container_cpu_usage_seconds_total{image!=\"\",name=~\"^k8s_.*\",container_name!=\"POD\",pod_name=~\"akvo-authz-unilog.*\",namespace=\"default\"}[$__interval])) by (container_name, pod_name)",
               "format": "time_series",
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{pod_name}}",
               "refId": "B"
             }
@@ -1389,7 +1372,7 @@ data:
               "format": "heatmap",
               "instant": false,
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "finish",
               "refId": "A"
             },
@@ -1461,12 +1444,12 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, sum(rate(event_tenant_duration_bucket{run=\"akvo-authz-unilog-consumer\"}[$interval])) by (le,db_name))",
+              "expr": "histogram_quantile(0.99, sum(rate(event_tenant_duration_bucket{run=\"akvo-authz-unilog-consumer\"}[$__interval])) by (le,db_name))",
               "format": "time_series",
               "hide": false,
               "instant": false,
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{db_name}} ",
               "refId": "A"
             }
@@ -1553,9 +1536,9 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, sum(rate(event_delay_bucket{run=\"akvo-authz-unilog-consumer\"}[$interval])) by (le,db_name))",
+              "expr": "histogram_quantile(0.99, sum(rate(event_delay_bucket{run=\"akvo-authz-unilog-consumer\"}[$__interval])) by (le,db_name))",
               "format": "time_series",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{db_name}}",
               "refId": "A"
             }
@@ -1672,7 +1655,7 @@ data:
               "expr": "event_queued_up{app=\"akvo-authz\"}",
               "format": "table",
               "instant": true,
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{flow_instance}}",
               "refId": "A"
             }
@@ -1754,7 +1737,7 @@ data:
               "expr": "event_unilog_offset{app=\"akvo-authz\"}",
               "format": "table",
               "instant": true,
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{db_name}}",
               "refId": "A"
             }
@@ -1807,7 +1790,7 @@ data:
             {
               "expr": "event_total{app=\"akvo-authz\"}",
               "format": "time_series",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{db_name}}",
               "refId": "A"
             }
@@ -1895,7 +1878,7 @@ data:
             {
               "expr": "event_valid{app=\"akvo-authz\"}",
               "format": "time_series",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{db_name}}",
               "refId": "A"
             }
@@ -1984,12 +1967,12 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.95, sum(rate(sql_run_duration_bucket{run=\"akvo-authz-unilog-consumer\"}[$interval])) by (le,query))",
+              "expr": "histogram_quantile(0.95, sum(rate(sql_run_duration_bucket{run=\"akvo-authz-unilog-consumer\"}[$__interval])) by (le,query))",
               "format": "time_series",
               "hide": false,
               "instant": false,
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{query}}",
               "refId": "B"
             }
@@ -2075,7 +2058,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(sql_run_total{run=\"akvo-authz-unilog-consumer\", result=\"failure\"}[$interval]))",
+              "expr": "sum(rate(sql_run_total{run=\"akvo-authz-unilog-consumer\", result=\"failure\"}[$__interval]))",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
@@ -2166,10 +2149,10 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(sql_run_duration_count{run=\"akvo-authz-unilog-consumer\"}[$interval])) by (query)",
+              "expr": "sum(rate(sql_run_duration_count{run=\"akvo-authz-unilog-consumer\"}[$__interval])) by (query)",
               "format": "time_series",
               "interval": "",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{query}}",
               "refId": "A"
             }
@@ -2254,16 +2237,16 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (rate (container_network_receive_bytes_total{image!=\"\",name=~\"^k8s_.*\",pod_name=~\"akvo-authz.*\"}[$interval])) by (container_name, pod_name)",
+              "expr": "sum (rate (container_network_receive_bytes_total{image!=\"\",name=~\"^k8s_.*\",pod_name=~\"akvo-authz.*\"}[$__interval])) by (container_name, pod_name)",
               "format": "time_series",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{container_name}} - {{pod_name}}",
               "refId": "B"
             },
             {
-              "expr": "- sum (rate (container_network_transmit_bytes_total{image!=\"\",name=~\"^k8s_.*\",pod_name=~\"akvo-authz.*\"}[$interval])) by (container_name, pod_name)",
+              "expr": "- sum (rate (container_network_transmit_bytes_total{image!=\"\",name=~\"^k8s_.*\",pod_name=~\"akvo-authz.*\"}[$__interval])) by (container_name, pod_name)",
               "format": "time_series",
-              "intervalFactor": 1,
+              "intervalFactor": 2,
               "legendFormat": "{{container_name}} - {{pod_name}}",
               "refId": "A"
             }
