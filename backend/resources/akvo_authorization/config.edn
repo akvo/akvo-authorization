@@ -25,6 +25,10 @@
 
   [:duct.database.sql/hikaricp :authz/unilog-consumer-db-no-stats]
   {:idle-timeout 300000
+   :connection-timeout 30000
+   :socket-timeout 10
+   :connect-timeout 5
+   :login-timeout 10
    :minimum-idle #duct/env ["CONSUMER_PARALLELISM" Int :or 15]
    :maximum-pool-size #duct/env ["CONSUMER_PARALLELISM" Int :or 15]
    :pool-name "consumer-pool"
@@ -45,7 +49,10 @@
                :event-log-user #duct/env "UNILOG_DATABASE_USER"
                :event-log-server #duct/env "UNILOG_DATABASE_HOST"
                :prefix "u_"
-               :db-name #duct/env "UNILOG_DATABASE_NAME"}}
+               :db-name #duct/env "UNILOG_DATABASE_NAME"
+               :extra-jdbc-opts {"socketTimeout" 10
+                                 "connectTime" 5
+                                 "loginTime" 10}}}
   }
 
  :authz.profile/api
@@ -53,6 +60,10 @@
 
   [:duct.database.sql/hikaricp :authz/authz-db-no-stats]
   {:idle-timeout 300000
+   :connection-timeout 3000
+   :socket-timeout 2
+   :connect-timeout 3
+   :login-timeout 3
    :minimum-idle 5
    :maximum-pool-size 10
    :pool-name "authz-pool"
