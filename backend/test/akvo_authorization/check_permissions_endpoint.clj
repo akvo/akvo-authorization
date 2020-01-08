@@ -4,7 +4,7 @@
             [testit.core :as it :refer [=in=> fact =>]]))
 
 (deftest filters
-  (let [aliases (delay {"cool alias" "one"})
+  (let [aliases {"cool alias" "one"}
         a-survey {:instance_id "one" :survey_id "1" :some-random-key "anything"}
         other-survey {:instance_id "two" :survey_id "1"}
         allow-survey {:flow-instance "one" :flow-id 1 :other-key "anything else"}]

@@ -104,10 +104,8 @@
                               (doall (filter-surveys all-survey flow_id)))
                   with-authz (set
                                (map :flow-id
-                                 (filter (fn [{:keys [flow-instance]}]
-                                           (= tenant flow-instance))
-                                   (akvo-authorization.authz/find-all-surveys
-                                     db email))))]
+                                 (akvo-authorization.authz/find-all-surveys
+                                   db email [tenant])))]
               (assoc
                 u
                 :with-flow with-flow
