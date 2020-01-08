@@ -14,12 +14,20 @@
 (defn add-authz [auth-tree]
   (tu/unilog-messages auth-tree (partial unilog/process tu/local-db)))
 
-(defn can-see [user]
-  (let [surveys (authz/find-all-surveys tu/local-db (tu/email user))
-        instance-name-pairs (map (juxt
-                                   (comp keyword tu/remove-test-run-id :flow-instance)
-                                   (comp keyword :name)) surveys)]
-    (set instance-name-pairs)))
+(def default-instances-to-query [:uat-instance :prod-instance])
+
+(defn can-see
+  ([user] (can-see user default-instances-to-query))
+  ([user instances-to-query]
+   (let [surveys (authz/find-all-surveys
+                   tu/local-db
+                   (tu/email user)
+                   (mapv tu/flow-instance-with-test-id instances-to-query))
+         full-surveys (map (partial unilog/get-node-by-flow-id tu/local-db) surveys)
+         instance-name-pairs (map (juxt
+                                    (comp keyword tu/remove-test-run-id :flow-instance)
+                                    (comp keyword :name)) full-surveys)]
+     (set instance-name-pairs))))
 
 (defn delete [type flow-instance entity]
   (unilog/process tu/local-db
@@ -212,9 +220,9 @@
         admin-user (create-admin :uat-instance :user1)]
     (is (= {:isSuperAdmin true} (allowed-objs :uat-instance (:id admin-user))))
     (is (= {:isSuperAdmin false
-              :securedObjectIds #{(:id (tu/find-node entities :folder-1))
-                                  (:id (tu/find-node entities :survey1))}}
-            (allowed-objs :uat-instance (:id (tu/find-user entities :user2)))))
+            :securedObjectIds #{(:id (tu/find-node entities :folder-1))
+                                (:id (tu/find-node entities :survey1))}}
+          (allowed-objs :uat-instance (:id (tu/find-user entities :user2)))))
     (is (= {:isSuperAdmin false
             :securedObjectIds #{0}}
           (allowed-objs :uat-instance (:id (tu/find-user entities :user3)))))))

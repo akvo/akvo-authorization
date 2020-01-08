@@ -22,13 +22,18 @@
                            (map :flow-id)
                            set)})))
 
-(defn find-all-surveys [db email]
+(defn find-all-surveys [db email instances]
   (let [user-id (:id (get-user-by-email db {:email email}))]
-    (get-all-surveys-for-user db {:user-id user-id})))
+    (get-all-surveys-for-user db {:user-id user-id :flow-instances instances})))
 
-(defn filter-surveys [allowed-surveys queried-surveys flow-aliases]
-  (let [aliases @flow-aliases
-        queried (reduce
+(defn all-instances-queried [queried-surveys aliases]
+  (set
+    (map (fn [{:keys [:instance_id]}]
+           (get aliases instance_id instance_id))
+      queried-surveys)))
+
+(defn filter-surveys [allowed-surveys queried-surveys aliases]
+  (let [queried (reduce
                   (fn [so-far {:keys [instance_id survey_id] :as queried-survey}]
                     (assoc so-far
                       [(get aliases instance_id instance_id) (Long/parseLong survey_id)]
@@ -56,10 +61,12 @@
                           :val (:val problem)
                           :in (:in problem)})
                    (::s/problems (s/explain-data survey-list-spec body)))})
-    (->
-      (find-all-surveys db email)
-      (filter-surveys body flow-aliases)
-      ring-util/response)))
+    (let [aliases @flow-aliases
+          all-instances-queried (all-instances-queried body aliases)]
+      (->
+        (find-all-surveys db email all-instances-queried)
+        (filter-surveys body aliases)
+        ring-util/response))))
 
 (defn endpoint* [db flow-aliases]
   (routes
