@@ -16,14 +16,16 @@
 
 (defn event-log-spec [config]
   (assert (not (empty? config)) "Config map is empty")
-  {:subprotocol "postgresql"
-   :subname (format "//%s:%s/%s"
-              (config :event-log-server)
-              (config :event-log-port)
-              (config :db-name))
-   :ssl true
-   :user (config :event-log-user)
-   :password (config :event-log-password)})
+  (merge
+    {:subprotocol "postgresql"
+     :subname (format "//%s:%s/%s"
+                (config :event-log-server)
+                (config :event-log-port)
+                (config :db-name))
+     :ssl true
+     :user (config :event-log-user)
+     :password (config :event-log-password)}
+    (:extra-jdbc-opts config)))
 
 (def mapper
   (json/object-mapper {:decode-key-fn keyword}))
