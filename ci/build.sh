@@ -38,7 +38,7 @@ docker run \
        --rm \
        --volume "$PWD/nginx-auth0/:/conf" \
        --entrypoint /usr/local/openresty/bin/openresty \
-       openresty/openresty:1.11.2.3-alpine-fat -t -c /conf/nginx.conf
+       openresty/openresty:1.15.8.2-7-alpine-fat-nosse42 -t -c /conf/nginx.conf
 (
     cd nginx-auth0
     docker build -t "eu.gcr.io/${PROJECT_NAME}/akvo-authz-nginx-auth0:$TRAVIS_COMMIT" .
