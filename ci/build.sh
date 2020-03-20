@@ -33,19 +33,12 @@ log Done
 
 log Check nginx configuration
 
-log Build KeyCloak nginx
-docker run \
-       --rm \
-       --volume "$PWD/nginx/:/conf" \
-       --entrypoint /usr/local/openresty/bin/openresty \
-       openresty/openresty:1.11.2.3-alpine-fat -t -c /conf/nginx.conf
-(
-    cd nginx
-    docker build -t "eu.gcr.io/${PROJECT_NAME}/akvo-authz-nginx:$TRAVIS_COMMIT" .
-)
-
 log Build Auth0 nginx
 (
     cd nginx-auth0
-    docker build -t "eu.gcr.io/${PROJECT_NAME}/akvo-authz-nginx-auth0:$TRAVIS_COMMIT" .
+    docker build -t "akvo/akvo-auth:latest" -t "eu.gcr.io/${PROJECT_NAME}/akvo-authz-nginx-auth0:$TRAVIS_COMMIT" .
+    docker run \
+           --rm \
+           --entrypoint /usr/local/openresty/bin/openresty \
+           "akvo/akvo-auth:latest" -t -c /usr/local/openresty/nginx/conf/nginx.conf
 )
