@@ -15,7 +15,6 @@ artifact k8s as "k8s" {
 
     artifact api_pod as "API pod (multiple pods)" {
 
-        node kc as "nginx keycloak"
         node auth0 as "nginx auth0"
 
         node api as "api"
@@ -23,7 +22,6 @@ artifact k8s as "k8s" {
         api --> authzdb
 
         auth0 -[#00FF00]-> api
-        kc -[#0000FF]-> api
 
     }
 
@@ -44,9 +42,6 @@ artifact k8s as "k8s" {
 actor browser
 node ingress as "Avko ingress"
 browser -[#0000FF]-> ingress : https://authz.akvo.org/....
-browser -[#00FF00]-> ingress : https://authz-auth0.akvo.org/....
-ingress -[#0000FF]-> kc : authz-auth0.akvo.org
-ingress -[#00FF00]-> auth0 : authz-auth0.akvo.org
-
+ingress -[#0000FF]-> auth0 : authz.akvo.org
 
 @enduml
