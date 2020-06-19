@@ -11,6 +11,7 @@
                  [org.clojure/test.check "0.10.0-alpha3"]
                  [org.clojure/spec.alpha "0.2.176"]
                  [org.postgresql/postgresql "42.2.6"]
+                 [com.google.cloud.sql/postgres-socket-factory "1.0.16"]
                  [hugsql-adapter-case "0.1.0"]
                  [com.taoensso/nippy "2.14.0"]
                  [com.layerware/hugsql "0.4.9"]

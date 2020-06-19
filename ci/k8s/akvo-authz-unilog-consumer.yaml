@@ -60,6 +60,11 @@ spec:
              secretKeyRef:
                name: akvo-authz
                key: unilog-database-host
+         - name: UNILOG_CLOUD_SQL_INSTANCE
+           valueFrom:
+             secretKeyRef:
+               name: akvo-authz
+               key: unilog-cloud-sql-instance
          - name: UNILOG_DATABASE_NAME
            valueFrom:
              secretKeyRef:

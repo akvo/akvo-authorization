@@ -48,6 +48,7 @@
                :event-log-port 5432
                :event-log-user #duct/env "UNILOG_DATABASE_USER"
                :event-log-server #duct/env "UNILOG_DATABASE_HOST"
+               :event-log-cloud-sql-instance #duct/env "UNILOG_CLOUD_SQL_INSTANCE"
                :prefix "u_"
                :db-name #duct/env "UNILOG_DATABASE_NAME"
                :extra-jdbc-opts {"socketTimeout" 10
