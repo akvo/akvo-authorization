@@ -80,6 +80,8 @@ spec:
              secretKeyRef:
                name: akvo-authz
                key: unilog-database-password
+         - name: GOOGLE_APPLICATION_CREDENTIALS
+           value: "/secrets/cloudsql/credentials.json"
          - name: SENTRY_DSN
            valueFrom:
              secretKeyRef:
@@ -95,3 +97,12 @@ spec:
             path: /healthz
             port: 3000
           initialDelaySeconds: 90
+        volumeMounts:
+          - name: secrets
+            mountPath: "/secrets/cloudsql/credentials.json"
+            subPath: "cloud-database-service-account.json"
+            readOnly: true
+      volumes:
+        - name: secrets
+          secret:
+            secretName: akvo-authz
