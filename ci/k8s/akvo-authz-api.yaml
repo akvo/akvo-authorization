@@ -55,6 +55,8 @@ spec:
              secretKeyRef:
                name: akvo-authz
                key: authz-database-url
+         - name: GOOGLE_APPLICATION_CREDENTIALS
+           value: "/secrets/cloudsql/credentials.json"
          - name: GITHUB_TOKEN
            valueFrom:
              secretKeyRef:
@@ -75,6 +77,11 @@ spec:
             path: /healthz
             port: 3000
           initialDelaySeconds: 90
+        volumeMounts:
+          - name: authz-secrets
+            mountPath: "/secrets/cloudsql/credentials.json"
+            subPath: "cloud-database-service-account.json"
+            readOnly: true
       - name: akvo-authz-auth0-proxy
         image: eu.gcr.io/akvo-lumen/akvo-authz-nginx-auth0:$TRAVIS_COMMIT
         imagePullPolicy: Always
@@ -106,3 +113,6 @@ spec:
         - name: secrets
           secret:
             secretName: flow-api-secrets
+        - name: authz-secrets
+          secret:
+            secretName: akvo-authz
