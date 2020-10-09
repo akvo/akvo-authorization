@@ -4,15 +4,14 @@ WHERE flow_id = :flow-id
       and flow_instance = :flow-instance
 
 -- :name insert-node! :!
-INSERT INTO nodes (id, name, type, flow_id, flow_instance, flow_parent_id, is_public, full_path)
-VALUES (:id, :name, :type, :flow-id, :flow-instance, :flow-parent-id, :is-public, :full-path)
+INSERT INTO nodes (id, name, type, flow_id, flow_instance, flow_parent_id, full_path)
+VALUES (:id, :name, :type, :flow-id, :flow-instance, :flow-parent-id, :full-path)
 
 -- :name update-node! :!
 UPDATE nodes
 SET name = :name,
     type = :type,
     flow_parent_id = :flow-parent-id,
-    is_public = :is-public,
     full_path = :full-path
 WHERE id=:id;
 
@@ -22,8 +21,8 @@ UPDATE nodes
   WHERE full_path <@ :old-full-path
 
 -- :name insert-root-node! :<! :1
-INSERT INTO nodes (id, name, type, flow_id, flow_instance, flow_parent_id, is_public, full_path)
-VALUES (:id, :name, :type, :flow-id, :flow-instance, :flow-parent-id, :is-public, :full-path)
+INSERT INTO nodes (id, name, type, flow_id, flow_instance, flow_parent_id, full_path)
+VALUES (:id, :name, :type, :flow-id, :flow-instance, :flow-parent-id, :full-path)
 ON CONFLICT ON CONSTRAINT n_flow_full_id DO NOTHING
 RETURNING id
 

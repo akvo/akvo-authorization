@@ -38,14 +38,13 @@
     :opt-un [::permissions]))
 
 (s/def ::parentId ::id)
-(s/def ::public boolean?)
 (s/def ::surveyGroupType #{"FOLDER" "SURVEY"})
 (s/def ::description string?)
 
 (s/def ::surveyGroup
   (s/keys
     :req-un
-    [::id ::name ::public ::surveyGroupType ::parentId]
+    [::id ::name ::surveyGroupType ::parentId]
     :opt-un
     [::description]))
 

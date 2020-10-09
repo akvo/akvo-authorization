@@ -22,7 +22,6 @@
 (defn insert-root-node [db flow-instance]
   (let [root-id (next-id db)]
     (insert-root-node! db {:id root-id
-                           :is-public false
                            :name flow-instance
                            :flow-id flow-root-id
                            :flow-instance flow-instance
@@ -127,8 +126,7 @@
     (case type
       ("surveyGroupCreated" "surveyGroupUpdated")
       (process-node-entity db (-> gae-entity
-                                (rename-keys {:public :is-public
-                                              :surveyGroupType :type
+                                (rename-keys {:surveyGroupType :type
                                               :parentId :flow-parent-id})
                                 (update :flow-parent-id (fn [parent-id] (or parent-id 0)))))
 
