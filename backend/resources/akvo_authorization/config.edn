@@ -61,9 +61,9 @@
 
   [:duct.database.sql/hikaricp :authz/authz-db-no-stats]
   {:idle-timeout 300000
-   :connection-timeout 3000
+   :connection-timeout 5000
    :socket-timeout 2
-   :connect-timeout 3
+   :connect-timeout 5
    :login-timeout 3
    :minimum-idle 5
    :maximum-pool-size 10
