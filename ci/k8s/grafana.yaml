@@ -526,11 +526,11 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "container_memory_working_set_bytes{image!=\"\",name=~\"^k8s_.*\",pod_name=~\"akvo-authz-.*\", container_name!=\"akvo-authz-unilog-consumer\", container_name!=\"POD\"}",
+              "expr": "container_memory_usage_bytes{pod=~\"akvo-authz-.*\", container!=\"akvo-authz-unilog-consumer\", container!=\"POD\", container=~\".+\"} / 1024 / 1024",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
-              "legendFormat": "{{container_name}} - {{pod_name}} ",
+              "legendFormat": "{{pod}} - {{container}} ",
               "refId": "A"
             }
           ],
@@ -538,7 +538,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Memory",
+          "title": "Memory (MiB)",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -616,11 +616,11 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (rate (container_cpu_usage_seconds_total{image!=\"\",name=~\"^k8s_.*\",container_name!=\"POD\",pod_name=~\"akvo-authz.*\", container_name!=\"akvo-authz-unilog-consumer\",namespace=\"default\"}[$__interval])) by (container_name, pod_name)",
+              "expr": "sum (rate (container_cpu_usage_seconds_total{container!=\"POD\",pod=~\"akvo-authz.*\",container!=\"akvo-authz-unilog-consumer\",namespace=\"default\", container=~\".+\"}[$__interval])) by (container, pod)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
-              "legendFormat": "{{container_name}} - {{pod_name}}",
+              "legendFormat": "{{pod}} - {{container}}",
               "refId": "B"
             }
           ],
@@ -1179,11 +1179,11 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "container_memory_working_set_bytes{image!=\"\",name=~\"^k8s_.*\",pod_name=~\"akvo-authz-unilog.*\", container_name!=\"POD\"}",
+              "expr": "container_memory_usage_bytes{pod=~\"akvo-authz-unilog.*\", container!=\"POD\", container=~\".+\"} / 1024 / 1024",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
-              "legendFormat": "{{pod_name}} ",
+              "legendFormat": "{{pod}} ",
               "refId": "A"
             }
           ],
@@ -1191,7 +1191,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Memory",
+          "title": "Memory (MiB)",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -1269,11 +1269,11 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (rate (container_cpu_usage_seconds_total{image!=\"\",name=~\"^k8s_.*\",container_name!=\"POD\",pod_name=~\"akvo-authz-unilog.*\",namespace=\"default\"}[$__interval])) by (container_name, pod_name)",
+              "expr": "sum (rate (container_cpu_usage_seconds_total{container!=\"POD\",container=~\".+\",pod=~\"akvo-authz-unilog.*\",namespace=\"default\"}[$__interval])) by (container, pod)",
               "format": "time_series",
               "interval": "",
               "intervalFactor": 2,
-              "legendFormat": "{{pod_name}}",
+              "legendFormat": "{{pod}}",
               "refId": "B"
             }
           ],
@@ -2237,17 +2237,17 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum (rate (container_network_receive_bytes_total{image!=\"\",name=~\"^k8s_.*\",pod_name=~\"akvo-authz.*\"}[$__interval])) by (container_name, pod_name)",
+              "expr": "sum (rate (container_network_receive_bytes_total{pod=~\"akvo-authz.*\",container=~\".+\"}[$__interval])) by (container, pod)",
               "format": "time_series",
               "intervalFactor": 2,
-              "legendFormat": "{{container_name}} - {{pod_name}}",
+              "legendFormat": "{{pod}} - {{container}}",
               "refId": "B"
             },
             {
-              "expr": "- sum (rate (container_network_transmit_bytes_total{image!=\"\",name=~\"^k8s_.*\",pod_name=~\"akvo-authz.*\"}[$__interval])) by (container_name, pod_name)",
+              "expr": "- sum (rate (container_network_transmit_bytes_total{pod=~\"akvo-authz.*\",container=~\".+\"}[$__interval])) by (container, pod)",
               "format": "time_series",
               "intervalFactor": 2,
-              "legendFormat": "{{container_name}} - {{pod_name}}",
+              "legendFormat": "{{pod}} - {{container}}",
               "refId": "A"
             }
           ],
