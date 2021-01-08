@@ -66,8 +66,8 @@ else
 
     log Pushing images
     gcloud auth configure-docker
-    docker push eu.gcr.io/${PROJECT_NAME}/akvo-authz
-    docker push eu.gcr.io/${PROJECT_NAME}/akvo-authz-nginx-auth0
+    docker push "eu.gcr.io/${PROJECT_NAME}/akvo-authz:${TRAVIS_COMMIT}"
+    docker push "eu.gcr.io/${PROJECT_NAME}/akvo-authz-nginx-auth0:${TRAVIS_COMMIT}"
 fi
 
 log Deploying
